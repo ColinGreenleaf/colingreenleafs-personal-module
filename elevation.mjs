@@ -99,10 +99,21 @@ export const renderElevationLabels = () => {
       align: 'center'
     });
 
+    // const text = new PIXI.Text('*'.repeat(elevation), {
+    //   fontFamily: 'Arial',
+    //   fontSize: Math.round(canvas.grid.size * 0.15),
+    //   fontWeight: 'normal',
+    //   fill: getElevationColor(elevation),
+    //   stroke: 0x000000,
+    //   strokeThickness: 2,
+    //   align: 'center'
+    // });
+
     text.anchor.set(0, 0);
     text.x = square.x * canvas.grid.size;
     text.y = square.y * canvas.grid.size;
     text.zIndex = 1000;
+    text.alpha = 0.6;
 
     container.addChild(text);
   });
@@ -216,7 +227,7 @@ export const selectSquares = () => {
 };
 
 // Export the elevation tool function for use in main.mjs
-export const runSelection = async () => {
+export const selectForAssignment = async () => {
   ui.notifications.info('Click on tiles to select them for elevation setting. Press Enter to confirm or Escape to cancel.');
   const result = await selectSquares();
   if (!result || !result.squares || result.squares.length === 0) {
@@ -256,6 +267,27 @@ export const runSelection = async () => {
       await setSquareElevation(square, elevation);
     }
 
+    // Re-render elevation labels after a short delay to ensure updates are applied
+    renderElevationLabels();
+  } finally {
+    cleanup();
+  }
+};
+
+export const selectForClearing = async () => {
+  ui.notifications.info('Click on tiles to select them for elevation clearing. Press Enter to confirm or Escape to cancel.');
+  const result = await selectSquares();
+  if (!result || !result.squares || result.squares.length === 0) {
+    ui.notifications.warn('No squares selected.');
+    if (result && result.cleanup) result.cleanup();
+    return;
+  }
+
+  const { squares, cleanup } = result;
+  try {
+    for (const square of squares) {
+      await setSquareElevation(square, 0);
+    }
     // Re-render elevation labels after a short delay to ensure updates are applied
     renderElevationLabels();
   } finally {
