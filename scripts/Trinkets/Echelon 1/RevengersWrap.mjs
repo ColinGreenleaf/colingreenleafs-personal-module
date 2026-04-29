@@ -159,4 +159,6 @@ export async function applyRevengeStrikeEffects(message, game, wrapActors, comba
   await roll.toMessage({
     flavor: `Revenger's Wrap Bonus Damage:`,
   });
+
+  foundry.applications.api
 }

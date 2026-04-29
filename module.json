@@ -10,7 +10,8 @@
     "canUpload": true
   },
   "esmodules": [
-    "scripts/itemsModule.mjs"
+    "scripts/main.mjs"
+    
   ],
   "languages": [
     {

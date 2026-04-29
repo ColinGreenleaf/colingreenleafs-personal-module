@@ -1,0 +1,9 @@
+{
+    "scripts": {
+        "createSymlinks": "node ./tools/create-symlinks.mjs",
+        "postinstall": "npm run createSymlinks"
+    },
+    "dependencies": {
+        "js-yaml": "^4.1.1"
+    }
+}
