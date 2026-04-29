@@ -1,0 +1,53 @@
+{
+  "draw-steel-rewards-automation": {
+    "Settings": {
+      "RevengersWrap": {
+        "Name": "Revenger's Wrap",
+        "Hint": "Enable \"Marked for Revenge\" tracking and bonus effects for the wearer of a Revenger's Wrap."
+      },
+      "BloodboundBand": {
+        "Name": "Bloodbound Band",
+        "Hint": "Enable unpreventable damage shared between two or more wearers of a Bloodbound Band."
+      },
+      "ColorCloaks": {
+        "Name": "Color Cloaks",
+        "Hint": "Enable the Color Cloaks' trigger reminders. (Red = reduce fire damage to 0, Blue = shift equal to level, Yellow = bonus damage equal to level on next attack)"
+      },
+      "KuranzoiPrismscale": {
+        "Name": "Kuran'zoi Prismscale",
+        "Hint": "Enable the Kuran'zoi Prismscale's trigger reminder."
+      },
+      "HellchargerHelm": {
+        "Name": "Hellcharger Helm",
+        "Hint": "Enable the Hellcharger Helm's reminder when using Charge."
+      },
+      "DeadOverlay": {
+        "Name": "Dead Status as Overlay",
+        "Hint": "When the Dead status effect is applied via the token HUD, render it as a full-token overlay instead of a small icon in the corner."
+      },
+      "AutoMinionDeath": {
+        "Name": "Automated Minion Death",
+        "Hint": "Automatically mark minions as dead when the squad's stamina pool drops below death thresholds. When excess damage kills additional minions, prompts the GM to pick which minions die by clicking their tokens."
+      },
+      "PillColor": {
+        "Name": "Group Background Colors",
+        "Hint": "Show custom background colors on group pills in the combat dock. Set colors via the Color Tokens dialog's Dock Background button."
+      }
+    },
+    "PillBackground": "Dock Background",
+    "Tooltip": {
+      "Stamina": "Stamina",
+      "TempStamina": "Temp",
+      "HeroicResource": "Heroic Resource",
+      "Surges": "Surge",
+      "Characteristics": "Characteristics",
+      "Size": "Size",
+      "Stability": "Stability",
+      "Speed": "Speed",
+      "Disengage": "Disengage",
+      "Level": "Level",
+      "Role": "Role",
+      "EV": "EV"
+    }
+  }
+}
