@@ -10,6 +10,7 @@ const ELEVATION_COLORS = {
   3: 0xff0000,  // Red
   4: 0xff00ff,  // Magenta
   5: 0x0000ff,  // Blue
+  6: 0x00ffff   // Cyan
 };
 
 const getElevationColor = (elevation) => {
@@ -26,11 +27,13 @@ const setElevationMap = async (map) => {
 
 const toKey = (square) => `${square.x},${square.y}`;
 
+// Get elevation for a specific square, defaulting to 0 if not set
 export const getSquareElevation = (square) => {
   const map = getElevationMap();
   return map[toKey(square)] ?? 0;
 };
 
+// Set elevation for a specific square
 export const setSquareElevation = async (square, elevation) => {
   const map = getElevationMap();
   const key = toKey(square);
@@ -44,6 +47,7 @@ export const setSquareElevation = async (square, elevation) => {
   await setElevationMap(map);
 };
 
+// Get a list of all squares with elevation data
 export const getSquaresWithElevation = () => {
   const map = getElevationMap();
   return Object.entries(map).map(([key, value]) => {
@@ -52,10 +56,12 @@ export const getSquaresWithElevation = () => {
   });
 };
 
+// Clear elevation for a specific square
 export const clearSquareElevation = async (square) => {
   await setSquareElevation(square, 0);
 };
 
+// Clear elevation for all squares
 export const clearAllElevations = async () => {
   if (!canvas.scene) return;
   await canvas.scene.unsetFlag(MODULE_NAME, ELEVATION_FLAG_KEY);
@@ -71,12 +77,14 @@ export const renderElevationLabels = () => {
   const existingText = canvas.stage.getChildByName('elevation-labels-container');
   if (existingText) canvas.stage.removeChild(existingText);
 
+  // Create a new container for elevation labels
   const container = new PIXI.Container();
   container.name = 'elevation-labels-container';
   canvas.stage.addChild(container);
 
   const squares = getSquaresWithElevation();
   
+  // Create text labels for each square with elevation
   squares.forEach(square => {
     const elevation = square.elevation;
     if (elevation === 0) return;
@@ -99,6 +107,7 @@ export const renderElevationLabels = () => {
     container.addChild(text);
   });
 
+  // Sort children to ensure proper rendering order
   container.sortChildren();
 };
 
@@ -115,30 +124,35 @@ export const clearElevationLabels = () => {
  */
 export const selectSquares = () => {
   return new Promise((resolve) => {
+    // Create a transparent overlay to capture clicks and show highlights
     const stage = canvas.app.stage;
     const selectedSquares = [];
     const graphics = new PIXI.Graphics();
     stage.addChild(graphics);
 
+    // Create an interactive overlay to capture pointer events
     const overlay = new PIXI.Container();
     overlay.interactive = true;
     overlay.eventMode = 'static';
     overlay.hitArea = new PIXI.Rectangle(0, 0, canvas.dimensions.width, canvas.dimensions.height);
     stage.addChild(overlay);
 
+    // Grid size for calculations
     const GRID = canvas.grid.size;
     let hoverSquare = null;
 
+    // Function to draw highlights on selected and hovered squares
     const drawHighlights = () => {
       graphics.clear();
       graphics.lineStyle(2, 0xffff00, 0.8);
 
+     // Draw highlights for selected squares
       for (const square of selectedSquares) {
         graphics.beginFill(0xffff00, 0.25);
         graphics.drawRect(square.x * GRID, square.y * GRID, GRID, GRID);
         graphics.endFill();
       }
-
+      // Draw highlight for hovered square
       if (hoverSquare) {
         const alreadySelected = selectedSquares.some(s => s.x === hoverSquare.x && s.y === hoverSquare.y);
         graphics.beginFill(0xffff00, alreadySelected ? 0.15 : 0.45);
@@ -147,16 +161,19 @@ export const selectSquares = () => {
       }
     };
 
+    // Convert pixel position to grid coordinates
     const toGrid = (pos) => ({
       x: Math.floor(pos.x / GRID),
       y: Math.floor(pos.y / GRID)
     });
 
+    // Update hover square on pointer move
     const onPointerMove = (event) => {
       hoverSquare = toGrid(event.data.getLocalPosition(stage));
       drawHighlights();
     };
 
+    // Toggle square selection on click
     const onPointerDown = (event) => {
       const square = toGrid(event.data.getLocalPosition(stage));
       const idx = selectedSquares.findIndex(s => s.x === square.x && s.y === square.y);
@@ -165,6 +182,7 @@ export const selectSquares = () => {
       drawHighlights();
     };
 
+    // Handle keyboard input for confirming or canceling selection
     const onKeyDown = (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
@@ -179,6 +197,7 @@ export const selectSquares = () => {
       }
     };
 
+    // Cleanup function to remove event listeners and graphics
     const cleanup = () => {
       overlay.off('pointermove', onPointerMove);
       overlay.off('pointerdown', onPointerDown);
@@ -203,27 +222,21 @@ export const runSelection = async () => {
     return;
   }
 
-  const html = `
-    <p>Set elevation level for ${squares.length} selected squares:</p>
-    <select id="elevation-select">
-      ${[0,1,2,3,4,5].map(e => `<option value="${e}">${e}</option>`).join('')}
+  const content = `
+  <div >
+    <div style='display:flex; flex-direction:row; align-items:center; 
+        gap:5px; margin-bottom:5px' >
+    <label>Elevation: </label><br>
+    <select name="elevation" >
+        ${[1,2,3,4,5,6].map(e => `<option value="${e}">${e}</option>`).join('')}
     </select>
+    </div>
+    </br>
+  </div>
   `;
 
   setTimeout(async () => {
-    const content = `
-    <div >
-        <div style='display:flex; flex-direction:row; align-items:center; 
-            gap:5px; margin-bottom:5px' >
-        <label>Elevation: </label><br>
-        <select name="elevation" >
-            ${[1,2,3,4,5,6].map(e => `<option value="${e}">${e}</option>`).join('')}
-        </select>
-        </div>
-        </br>
-    </div>
-    `;
- 
+    // Show a dialog to select elevation level
     const data = await foundry.applications.api.DialogV2.input({
     window: { title: "Select Elevation" },
     content: content,
@@ -232,32 +245,13 @@ export const runSelection = async () => {
     }
     })  ;
 
+    // Update elevation for selected squares
     const elevation = parseInt(data.elevation);
     for (const square of squares) {
       await setSquareElevation(square, elevation);
     }
+
+    // Re-render elevation labels after a short delay to ensure updates are applied
     renderElevationLabels();
     }, 0);
-
-
-    // new Dialog({
-    //   title: 'Set Elevation',
-    //   content: html,
-    //   buttons: {
-    //     set: {
-    //       label: 'Set',
-    //       callback: async (html) => {
-    //         const level = parseInt(html.find('#elevation-select').val());
-    //         for (const square of squares) {
-    //           await setSquareElevation(square, level);
-    //         }
-    //         renderElevationLabels();
-    //       }
-    //     },
-    //     cancel: {
-    //       label: 'Cancel'
-    //     }
-    //   },
-    //   default: 'set'
-    // }).render(true);
 };
