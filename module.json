@@ -1,10 +1,10 @@
 {
-  "id": "draw-steel-rewards-automation",
-  "title": "My Module",
+  "id": "colingreenleafs-personal-module",
+  "title": "ColinGreenleaf's Personal Module",
   "version": "1.0.0",
   "compatibility": {
-    "minimum": "13",
-    "verified": "13"
+    "minimum": "14",
+    "verified": "14"
   },
   "flags": {
     "canUpload": true
