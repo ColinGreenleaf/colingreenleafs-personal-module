@@ -3,6 +3,7 @@ import {dealSharedDamage} from "./Trinkets/Echelon 1/BloodboundBand.mjs";
 import {remindColorCloakEffects} from "./Trinkets/Echelon 1/ColorCloaks.mjs";
 import {remindAndApplyHelmEffects} from "./Trinkets/Echelon 1/HellchargerHelm.mjs";
 import {remindWhenWearerDamaged} from "./Leveled Treasures/Armor/KuranzoiPrismscale.mjs";
+import {runSelection, renderElevationLabels, clearAllElevations} from "../elevation.mjs";
 
 
 //TODO: add additinal checks so that each hook doesn't run it's code unless the conditions are met.
@@ -23,6 +24,43 @@ export function getActorsWithItem(game, itemName) {
   const actors = game.actors.contents.filter(a => a.items.find(i => i.name === itemName));
   return actors;
 };
+
+const addTools = (control, tools) => {
+  if (!control) return;
+  if (Array.isArray(control.tools)) {
+    control.tools.push(...Object.values(tools));
+  } else {
+    let orderIndex = Object.keys(control.tools).length;
+    for (const [key, tool] of Object.entries(tools)) {
+      tool.order = orderIndex++;
+      control.tools[key] = tool;
+    }
+  }
+};
+
+
+Hooks.on('getSceneControlButtons', (controls) => {
+  const wallControl  = controls.walls  || controls.wall;
+
+  addTools(wallControl, {
+    'elevation': {
+      name: 'elevation',
+      title: 'Elevation Designer',
+      icon: 'fas fa-arrow-up',
+      button: true,
+      visible: game.user.isGM,
+      onClick: () => runSelection()
+    },
+    'clear-elevation': {
+      name: 'clear-elevation',
+      title: 'Clear Elevation Markers',
+      icon: 'fas fa-trash-alt',
+      button: true,
+      visible: game.user.isGM,
+      onClick: () => clearAllElevations()
+    },
+  });
+});
 
 /* -------------------------------------------------- */
 /*   Initialization                                   */
@@ -85,7 +123,9 @@ Hooks.on("ready", () => {
   // if (game.settings.get(MODULE_ID, "kuranzoiPrismscale")) toggleKuranzoiPrismscale(true);
 
 });
-
+Hooks.on('canvasReady', () => {
+  renderElevationLabels();
+});
   /* -------------------------------------------------- */
   /*   Revenger's Wrap Hook Controls                    */
   /* -------------------------------------------------- */
