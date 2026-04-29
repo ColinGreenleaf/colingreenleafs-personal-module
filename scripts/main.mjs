@@ -3,7 +3,7 @@ import {dealSharedDamage} from "./Trinkets/Echelon 1/BloodboundBand.mjs";
 import {remindColorCloakEffects} from "./Trinkets/Echelon 1/ColorCloaks.mjs";
 import {remindAndApplyHelmEffects} from "./Trinkets/Echelon 1/HellchargerHelm.mjs";
 import {remindWhenWearerDamaged} from "./Leveled Treasures/Armor/KuranzoiPrismscale.mjs";
-import {runSelection, renderElevationLabels, clearAllElevations} from "../elevation.mjs";
+import {runSelection, renderElevationLabels, clearAllElevations, getSquareElevation} from "../elevation.mjs";
 
 
 //TODO: add additinal checks so that each hook doesn't run it's code unless the conditions are met.
@@ -125,6 +125,27 @@ Hooks.on("ready", () => {
 });
 Hooks.on('canvasReady', () => {
   renderElevationLabels();
+});
+
+Hooks.on('updateToken', async (token, changes, options, userId) => {
+  // Check if the token's position changed
+  if (changes.x !== undefined || changes.y !== undefined) {
+    const gridSize = canvas.grid.size;
+    const gridX = Math.floor((changes.x ?? token.x) / gridSize);
+    const gridY = Math.floor((changes.y ?? token.y) / gridSize);
+    const squareElevation = getSquareElevation({ x: gridX, y: gridY });
+    
+    if (squareElevation > 0 && token.elevation !== squareElevation) {
+      await token.update({ elevation: squareElevation });
+    } else if (squareElevation === 0 && token.elevation !== 0) {
+      await token.update({ elevation: 0 });
+    }
+
+    //if the elevation is 2 or more squares higher than the token's current elevation, show a warning notification
+    if (squareElevation > token.elevation + 1.9) {
+      ui.notifications.warn(`${token.name} is moving onto a square with elevation ${squareElevation}, which is more than 1 higher than their current elevation of ${token.elevation}. Consider using the Climb action to avoid falling damage.`);
+    }
+  }
 });
   /* -------------------------------------------------- */
   /*   Revenger's Wrap Hook Controls                    */
