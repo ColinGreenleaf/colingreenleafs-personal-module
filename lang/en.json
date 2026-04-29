@@ -20,6 +20,10 @@
       "HellchargerHelm": {
         "Name": "Hellcharger Helm",
         "Hint": "Enable the Hellcharger Helm's reminder when using Charge."
+      },
+      "EnableElevation": {
+        "Name": "Enable Elevation Module",
+        "Hint": "Enable the elevation marking system for 3D combat"
       }
     }
   }
