@@ -9,8 +9,8 @@ const ELEVATION_COLORS = {
   2: 0xff8800,  // Orange
   3: 0xff0000,  // Red
   4: 0xff00ff,  // Magenta
-  5: 0x0000ff,  // Blue
-  6: 0x00ffff   // Cyan
+  5: 0x00ffff,  // Cyan
+  6: 0x00ff00,   // Green
 };
 
 const getElevationColor = (elevation) => {
@@ -91,17 +91,17 @@ export const renderElevationLabels = () => {
 
     const text = new PIXI.Text(elevation.toString(), {
       fontFamily: 'Arial',
-      fontSize: 32,
-      fontWeight: 'bold',
+      fontSize: Math.round(canvas.grid.size * 0.15),
+      fontWeight: 'normal',
       fill: getElevationColor(elevation),
       stroke: 0x000000,
       strokeThickness: 2,
       align: 'center'
     });
 
-    text.anchor.set(0.5, 0.5);
-    text.x = square.x * canvas.grid.size + canvas.grid.size / 2;
-    text.y = square.y * canvas.grid.size + canvas.grid.size / 2;
+    text.anchor.set(0, 0);
+    text.x = square.x * canvas.grid.size;
+    text.y = square.y * canvas.grid.size;
     text.zIndex = 1000;
 
     container.addChild(text);
@@ -192,8 +192,10 @@ export const selectSquares = () => {
       } else if (event.key === 'Enter') {
         event.preventDefault();
         event.stopPropagation();
-        cleanup();
-        resolve(selectedSquares);
+        overlay.off('pointermove', onPointerMove);
+        hoverSquare = null;
+        drawHighlights();
+        resolve({ squares: selectedSquares, cleanup });
       }
     };
 
@@ -216,11 +218,14 @@ export const selectSquares = () => {
 // Export the elevation tool function for use in main.mjs
 export const runSelection = async () => {
   ui.notifications.info('Click on tiles to select them for elevation setting. Press Enter to confirm or Escape to cancel.');
-  const squares = await selectSquares();
-  if (!squares || squares.length === 0) {
+  const result = await selectSquares();
+  if (!result || !result.squares || result.squares.length === 0) {
     ui.notifications.warn('No squares selected.');
+    if (result && result.cleanup) result.cleanup();
     return;
   }
+
+  const { squares, cleanup } = result;
 
   const content = `
   <div >
@@ -235,7 +240,7 @@ export const runSelection = async () => {
   </div>
   `;
 
-  setTimeout(async () => {
+  try {
     // Show a dialog to select elevation level
     const data = await foundry.applications.api.DialogV2.input({
     window: { title: "Select Elevation" },
@@ -243,7 +248,7 @@ export const runSelection = async () => {
     ok: {
         label: "SET",
     }
-    })  ;
+    });
 
     // Update elevation for selected squares
     const elevation = parseInt(data.elevation);
@@ -253,5 +258,7 @@ export const runSelection = async () => {
 
     // Re-render elevation labels after a short delay to ensure updates are applied
     renderElevationLabels();
-    }, 0);
+  } finally {
+    cleanup();
+  }
 };
