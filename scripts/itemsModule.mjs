@@ -8,12 +8,12 @@ import {remindWhenWearerDamaged} from "./Leveled Treasures/Armor/KuranzoiPrismsc
 //TODO: add additinal checks so that each hook doesn't run it's code unless the conditions are met.
 //this could potentially be collapsing all alike hooks together and adding check functions for each item to see if the item is involved in the tirggering event
 
-const MODULE_ID = 'draw-steel-rewards-automation'
+const MODULE_ID = 'colingreenleafs-personal-module'
 const REVENGERS_WRAP_NAME = 'Revenger’s Wrap';
 const BLOODBOUND_BAND_NAME = 'Bloodbound Band';
-const COLOR_CLOAKS_NAMES = ['Color Cloak (Blue)', 'Color Cloak (Red)', 'Color Cloak (Yellow)'];
-const HELLCHARGER_HELM_NAME = 'Hellcharger Helm';
-const KURANZOI_PRISMSCALE_NAME = "Kuran’zoi Prismscale";
+// const COLOR_CLOAKS_NAMES = ['Color Cloak (Blue)', 'Color Cloak (Red)', 'Color Cloak (Yellow)'];
+// const HELLCHARGER_HELM_NAME = 'Hellcharger Helm';
+// const KURANZOI_PRISMSCALE_NAME = "Kuran’zoi Prismscale";
 
 Hooks.on("init", function() {
   console.log("This code runs once the Foundry VTT software begins its initialization workflow.");
@@ -48,42 +48,41 @@ Hooks.once("init", () => {
     default: true,
     onChange: (value) => {toggleBloodboundBand(value)}
   });
-
-  game.settings.register(MODULE_ID, "colorCloaks", {
-    name: `${MODULE_ID}.Settings.ColorCloaks.Name`,
-    hint: `${MODULE_ID}.Settings.ColorCloaks.Hint`,
-    scope: "world",
-    config: true,
-    type: Boolean,
-    default: true,
-    onChange: (value) => {toggleColorCloaks(value)}
-  });
-  game.settings.register(MODULE_ID, "hellchargerHelm", {
-    name: `${MODULE_ID}.Settings.HellchargerHelm.Name`,
-    hint: `${MODULE_ID}.Settings.HellchargerHelm.Hint`,
-    scope: "world",
-    config: true,
-    type: Boolean,
-    default: true,
-    onChange: (value) => {toggleHellchargerHelm(value)}
-  });
-  game.settings.register(MODULE_ID, "kuranzoiPrismscale", {
-    name: `${MODULE_ID}.Settings.KuranzoiPrismscale.Name`,
-    hint: `${MODULE_ID}.Settings.KuranzoiPrismscale.Hint`,
-    scope: "world",
-    config: true,
-    type: Boolean,
-    default: true,
-    onChange: (value) => {toggleKuranzoiPrismscale(value)}
-  });
+  // game.settings.register(MODULE_ID, "colorCloaks", {
+  //   name: `${MODULE_ID}.Settings.ColorCloaks.Name`,
+  //   hint: `${MODULE_ID}.Settings.ColorCloaks.Hint`,
+  //   scope: "world",
+  //   config: true,
+  //   type: Boolean,
+  //   default: true,
+  //   onChange: (value) => {toggleColorCloaks(value)}
+  // });
+  // game.settings.register(MODULE_ID, "hellchargerHelm", {
+  //   name: `${MODULE_ID}.Settings.HellchargerHelm.Name`,
+  //   hint: `${MODULE_ID}.Settings.HellchargerHelm.Hint`,
+  //   scope: "world",
+  //   config: true,
+  //   type: Boolean,
+  //   default: true,
+  //   onChange: (value) => {toggleHellchargerHelm(value)}
+  // });
+  // game.settings.register(MODULE_ID, "kuranzoiPrismscale", {
+  //   name: `${MODULE_ID}.Settings.KuranzoiPrismscale.Name`,
+  //   hint: `${MODULE_ID}.Settings.KuranzoiPrismscale.Hint`,
+  //   scope: "world",
+  //   config: true,
+  //   type: Boolean,
+  //   default: true,
+  //   onChange: (value) => {toggleKuranzoiPrismscale(value)}
+  // });
 });
 Hooks.on("ready", () => {
   //once the game is ready, check which settings are enabled and activate the corresponding functionality for each item
   if (game.settings.get(MODULE_ID, "revengersWrap"))    toggleRevengersWrap(true);
   if (game.settings.get(MODULE_ID, "bloodboundBand"))   toggleBloodboundBand(true);
-  if (game.settings.get(MODULE_ID, "colorCloaks"))      toggleColorCloaks(true);
-  if (game.settings.get(MODULE_ID, "hellchargerHelm"))  toggleHellchargerHelm(true);
-  if (game.settings.get(MODULE_ID, "kuranzoiPrismscale")) toggleKuranzoiPrismscale(true);
+  // if (game.settings.get(MODULE_ID, "colorCloaks"))      toggleColorCloaks(true);
+  // if (game.settings.get(MODULE_ID, "hellchargerHelm"))  toggleHellchargerHelm(true);
+  // if (game.settings.get(MODULE_ID, "kuranzoiPrismscale")) toggleKuranzoiPrismscale(true);
 
 });
 
@@ -139,57 +138,57 @@ const toggleBloodboundBand = (enabled) => {
   } 
 }
 
-  /* -------------------------------------------------- */
-  /*   Color Cloaks Hook Controls                       */
-  /* -------------------------------------------------- */
-const toggleColorCloaks = (enabled) => {
-  if (enabled) {
-    //find relevant actors
-    const blueCloakActors = getActorsWithItem(game, COLOR_CLOAKS_NAMES[0]);
-    const redCloakActors = getActorsWithItem(game, COLOR_CLOAKS_NAMES[1]);
-    const yellowCloakActors = getActorsWithItem(game, COLOR_CLOAKS_NAMES[2]);
+//   /* -------------------------------------------------- */
+//   /*   Color Cloaks Hook Controls                       */
+//   /* -------------------------------------------------- */
+// const toggleColorCloaks = (enabled) => {
+//   if (enabled) {
+//     //find relevant actors
+//     const blueCloakActors = getActorsWithItem(game, COLOR_CLOAKS_NAMES[0]);
+//     const redCloakActors = getActorsWithItem(game, COLOR_CLOAKS_NAMES[1]);
+//     const yellowCloakActors = getActorsWithItem(game, COLOR_CLOAKS_NAMES[2]);
 
-    /* -------------------------apply color cloak effects when an effect occurs on a target wearing a cloak------------------------- */
-    window._colorCloakHook = Hooks.on('createChatMessage', async (message) => {
-      remindColorCloakEffects(message, game, blueCloakActors, redCloakActors, yellowCloakActors);
-    })
-  } else {
-    Hooks.off('createChatMessage', window._colorCloakHook);
-    window._colorCloakHook = null;
-  }
-}
+//     /* -------------------------apply color cloak effects when an effect occurs on a target wearing a cloak------------------------- */
+//     window._colorCloakHook = Hooks.on('createChatMessage', async (message) => {
+//       remindColorCloakEffects(message, game, blueCloakActors, redCloakActors, yellowCloakActors);
+//     })
+//   } else {
+//     Hooks.off('createChatMessage', window._colorCloakHook);
+//     window._colorCloakHook = null;
+//   }
+// }
 
-  /* -------------------------------------------------- */
-  /*   Hellcharger Helm Hook Controls                   */
-  /* -------------------------------------------------- */
-const toggleHellchargerHelm = (enabled) => {
-  if (enabled) {
-    //find relevant actors
-    const helmActors = getActorsWithItem(game, HELLCHARGER_HELM_NAME);
+//   /* -------------------------------------------------- */
+//   /*   Hellcharger Helm Hook Controls                   */
+//   /* -------------------------------------------------- */
+// const toggleHellchargerHelm = (enabled) => {
+//   if (enabled) {
+//     //find relevant actors
+//     const helmActors = getActorsWithItem(game, HELLCHARGER_HELM_NAME);
 
 
-    window._helmHook = Hooks.on('createChatMessage', async (message) => {
-      remindAndApplyHelmEffects(message, game, helmActors);
-    })
-  } else {
-    Hooks.off('createChatMessage', window._helmHook);
-    window._helmHook = null;
-  }
-}
+//     window._helmHook = Hooks.on('createChatMessage', async (message) => {
+//       remindAndApplyHelmEffects(message, game, helmActors);
+//     })
+//   } else {
+//     Hooks.off('createChatMessage', window._helmHook);
+//     window._helmHook = null;
+//   }
+// }
 
-  /* -------------------------------------------------- */
-  /*   Kuran'zoi Prismscale Hook Controls                   */
-  /* -------------------------------------------------- */
-const toggleKuranzoiPrismscale = (enabled) => {
-  if (enabled) {
-    //find relevant actors
-    const scaleActors = getActorsWithItem(game, "Kuran’zoi Prismscale");
-    window._scaleHook = Hooks.on('updateActor', async (actor, changes, options) => {
-      remindWhenWearerDamaged(actor, changes, options, scaleActors);
-    })
-  } else {
-    Hooks.off('updateActor', window._scaleHook);
-    window._scaleHook = null;
-  } 
-}
+//   /* -------------------------------------------------- */
+//   /*   Kuran'zoi Prismscale Hook Controls                   */
+//   /* -------------------------------------------------- */
+// const toggleKuranzoiPrismscale = (enabled) => {
+//   if (enabled) {
+//     //find relevant actors
+//     const scaleActors = getActorsWithItem(game, "Kuran’zoi Prismscale");
+//     window._scaleHook = Hooks.on('updateActor', async (actor, changes, options) => {
+//       remindWhenWearerDamaged(actor, changes, options, scaleActors);
+//     })
+//   } else {
+//     Hooks.off('updateActor', window._scaleHook);
+//     window._scaleHook = null;
+//   } 
+// }
 

@@ -1,5 +1,5 @@
 {
-  "draw-steel-rewards-automation": {
+  "colingreenleafs-personal-module": {
     "Settings": {
       "RevengersWrap": {
         "Name": "Revenger's Wrap",
@@ -20,34 +20,7 @@
       "HellchargerHelm": {
         "Name": "Hellcharger Helm",
         "Hint": "Enable the Hellcharger Helm's reminder when using Charge."
-      },
-      "DeadOverlay": {
-        "Name": "Dead Status as Overlay",
-        "Hint": "When the Dead status effect is applied via the token HUD, render it as a full-token overlay instead of a small icon in the corner."
-      },
-      "AutoMinionDeath": {
-        "Name": "Automated Minion Death",
-        "Hint": "Automatically mark minions as dead when the squad's stamina pool drops below death thresholds. When excess damage kills additional minions, prompts the GM to pick which minions die by clicking their tokens."
-      },
-      "PillColor": {
-        "Name": "Group Background Colors",
-        "Hint": "Show custom background colors on group pills in the combat dock. Set colors via the Color Tokens dialog's Dock Background button."
       }
-    },
-    "PillBackground": "Dock Background",
-    "Tooltip": {
-      "Stamina": "Stamina",
-      "TempStamina": "Temp",
-      "HeroicResource": "Heroic Resource",
-      "Surges": "Surge",
-      "Characteristics": "Characteristics",
-      "Size": "Size",
-      "Stability": "Stability",
-      "Speed": "Speed",
-      "Disengage": "Disengage",
-      "Level": "Level",
-      "Role": "Role",
-      "EV": "EV"
     }
   }
 }

@@ -1,4 +1,3 @@
-const MODULE_ID = "draw-steel-rewards-automation";
 const ITEM_NAME = 'Revenger’s Wrap';
 
 const REVENGE_EFFECT_DATA = {
@@ -16,7 +15,7 @@ const REVENGE_EFFECT_DATA = {
   },
   description: "", tint: "#ffffff", transfer: false, statuses: [], sort: 0, flags: {}
 };
-const REVENGE_ORIGIN = 'module.draw-steel-rewards-automation';
+const REVENGE_ORIGIN = 'module.colingreenleafs-personal-module';
 
 //returns actors that have a Revenger's Wrap in their inventory
 export function getWrapActors(game) {
@@ -26,14 +25,16 @@ export function getWrapActors(game) {
 
 // removes the revenge mark from all actors and returns the list of actors that were unmarked
 export async function clearRevengeMarks(combatActors) {
-    const marked = combatActors.filter(a =>
-      a.effects.some(e => e.name === REVENGE_EFFECT_DATA.name)
-    );
-    for (const actor of marked) {
-      const effect = actor.effects.find(e => e.name === REVENGE_EFFECT_DATA.name);
-      await effect.delete();
-    }
-    return marked;
+  ui.notifications.info(`Clearing revenge marks.`);
+  console.log('Clearing revenge marks from actors:', combatActors.map(a => a.name));
+  const marked = combatActors.filter(a =>
+    a.effects.some(e => e.name === REVENGE_EFFECT_DATA.name)
+  );
+  for (const actor of marked) {
+    const effect = actor.effects.find(e => e.name === REVENGE_EFFECT_DATA.name);
+    await effect.delete();
+  }
+  return marked;
 };
 
 // clears revenge marks at the end of the turn of any combatant whose actor is in wrapActors
@@ -71,7 +72,7 @@ export async function applyMarkWhenWearerDamaged(actor, changes, options, wrapAc
   const currentTemp = newTemp    ?? actor.system.stamina.temporary ?? 0;
   if ((currentVal + currentTemp) >= (prevStamina + prevTemp)) return;  
 
-  let selected = canvas.tokens.controlled;
+  let selected = [];
 
   if (selected.length !== 1) {
     const confirmed = await new Promise((resolve) => {
