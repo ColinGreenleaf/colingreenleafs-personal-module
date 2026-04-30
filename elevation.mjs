@@ -482,7 +482,7 @@ export const renderElevationOverlay = () => {
       const lipY = py - heightOffset;
       
       // The Dark Edge
-      lip.lineStyle(10, 0x000000, 0.4);
+      lip.lineStyle(6, 0xFFFFFF, 0.4);
       lip.moveTo(px, lipY);
       lip.lineTo(px + GRID, lipY);
       
