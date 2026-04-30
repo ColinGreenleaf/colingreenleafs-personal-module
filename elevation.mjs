@@ -390,103 +390,173 @@ export const toggleElevationOverlay = () => {
 };
 
 export const renderElevationOverlay = () => {
-  // Remove existing overlay
   const existing = canvas.stage.getChildByName(ELEVATION_OVERLAY_NAME);
-  if (existing) {
-    existing.destroy({ children: true, texture: false });
-  }
+  // Use canvas.primary to ensure it stays below tokens but above the map
+  if (existing) existing.destroy({ children: true, texture: false });
 
   const map = getElevationMap();
   if (!Object.keys(map).length) return;
 
-  const GRID = canvas.grid.size;
-  const cols = Math.ceil(canvas.dimensions.width / GRID);
-  const rows = Math.ceil(canvas.dimensions.height / GRID);
+  const bgSprite = canvas.primary.background;
+  if (!bgSprite?.texture) return;
 
+  const GRID = canvas.grid.size;
   const container = new PIXI.Container();
   container.name = ELEVATION_OVERLAY_NAME;
+  container.sortableChildren = true;
 
-  const gradientContainer = new PIXI.Container();
-  const graphics = new PIXI.Graphics();
+  // Use a consistent multiplier for elevation height
+  const WALL_STEEPNESS = Math.ceil(GRID * 0.025); 
 
-  container.addChild(gradientContainer);
-  container.addChild(graphics);
+  const sceneRect = canvas.dimensions.sceneRect; 
+  const texBase = bgSprite.texture.baseTexture;
+  
+  const scaleX = texBase.width / sceneRect.width;
+  const scaleY = texBase.height / sceneRect.height;
 
-  const texture = getGradientTexture();
+  const sortedKeys = Object.keys(map).sort((a, b) => {
+    const [ax, ay] = a.split(',').map(Number);
+    const [bx, by] = b.split(',').map(Number);
+    // Sort North-to-South primarily
+    return ay - by || ax - bx;
+  });
 
-  // --- Gradient sprites ---
-  for (const [key, elev] of Object.entries(map)) {
-    const [x, y] = key.split(',').map(Number);
-    const px = x * GRID;
-    const py = y * GRID;
+  for (const key of sortedKeys) {
+    const [gx, gy] = key.split(',').map(Number);
+    const elev = map[key];
+    const px = gx * GRID;
+    const py = gy * GRID;
+    const heightOffset = elev * WALL_STEEPNESS;
 
-    for (const { dx, dy, side } of NEIGHBOR_DIRS) {
-      const neighborElev = getNeighborElev(map, x + dx, y + dy, cols, rows);
-      if (neighborElev <= elev) continue;
+    const localX = (px - sceneRect.x) * scaleX;
+    const localY = (py - sceneRect.y) * scaleY;
+    const localGridW = GRID * scaleX;
+    const localGridH = GRID * scaleY;
 
-      const delta = neighborElev - elev;
-      const alpha = BASE_GRADIENT_STRENGTH * Math.min(1, 0.3 + delta * 0.2);
+    const block = new PIXI.Container();
+    
+    // --- THE FIX: GRANULAR Z-INDEX ---
+    // We multiply gy by a large factor to keep rows distinct, 
+    // then add 'elev' so higher blocks in the same row render ON TOP of lower ones.
+    block.zIndex = (gy * 100) + elev; 
 
-      const { rotation, anchorX, anchorY } = EDGE_ROTATIONS[side];
+    // 1. THE CAP
+    const capFrame = new PIXI.Rectangle(localX, localY, localGridW, localGridH);
+    const capTex = new PIXI.Texture(texBase, capFrame);
+    const cap = new PIXI.Sprite(capTex);
+    
+    cap.width = GRID;
+    cap.height = GRID;
+    cap.x = px;
+    cap.y = py - heightOffset;
+    cap.tint = 0xf0f0f0;
 
-      const sprite = new PIXI.Sprite(texture);
-      sprite.width = GRID;
-      sprite.height = GRID;
-      sprite.alpha = alpha;
-      sprite.rotation = rotation;
-      sprite.anchor.set(anchorX, anchorY);
-      const bottom_off = (side === 'bottom') ? -GRID : 0; 
-      const left_off = (side === 'left') ? -GRID : 0;
-      const right_off = (side === 'right') ? -GRID : 0;
-      sprite.x = px + (anchorX * GRID) + bottom_off + left_off; 
-      sprite.y = py + (anchorY * GRID) + right_off + bottom_off; 
-
-      gradientContainer.addChild(sprite);
+    const border = new PIXI.Graphics();
+    border.lineStyle(1, 0x000000, 0.2);
+    border.drawRect(px, py - heightOffset, GRID, GRID);
+    
+    // 2. THE FRONT WALL (South)
+    const southElev = getNeighborElev(map, gx, gy + 1);
+    if (southElev < elev) {
+      const wallFrame = new PIXI.Rectangle(localX, localY + localGridH - 2, localGridW, 2);
+      const wallTex = new PIXI.Texture(texBase, wallFrame);
+      const wall = new PIXI.Sprite(wallTex);
+      
+      const wallHeight = (elev - southElev) * WALL_STEEPNESS;
+      wall.x = px;
+      wall.y = py - heightOffset + GRID;
+      wall.width = GRID;
+      wall.height = wallHeight;
+      wall.tint = 0x777777;
+      block.addChild(wall);
     }
+
+// 3. THE BACK LIP (North edge)
+    const northElev = getNeighborElev(map, gx, gy - 1);
+    if (northElev < elev) {
+      // Create a "Rim" highlight/shadow to show the drop-off
+      const lip = new PIXI.Graphics();
+      
+      // We draw a dark line to show the "edge" and a faint light line 
+      // inside it to give it 3D "rounding"
+      const lipY = py - heightOffset;
+      
+      // The Dark Edge
+      lip.lineStyle(10, 0x000000, 0.4);
+      lip.moveTo(px, lipY);
+      lip.lineTo(px + GRID, lipY);
+      
+      // The Light Highlight (Inner Bevel)
+      lip.lineStyle(1, 0xffffff, 0.2);
+      lip.moveTo(px, lipY + 1);
+      lip.lineTo(px + GRID, lipY + 1);
+      
+      block.addChild(lip);
+    }
+
+    // 4. THE EAST WALL (Right)
+    const eastElev = getNeighborElev(map, gx + 1, gy);
+    if (eastElev < elev) {
+      const wallFrame = new PIXI.Rectangle(localX + localGridW - 2, localY, 2, localGridH);
+      const wallTex = new PIXI.Texture(texBase, wallFrame);
+      const wall = new PIXI.Sprite(wallTex);
+      
+      const wallWidth = 4;
+      const wallHeight = GRID; 
+      
+      wall.x = px + GRID;
+      wall.y = py - heightOffset;
+      wall.width = wallWidth;
+      wall.height = wallHeight;
+      wall.tint = 0x555555;
+      block.addChild(wall);
+    }
+
+    // 5. THE WEST WALL (Left)
+    const westElev = getNeighborElev(map, gx - 1, gy);
+    if (westElev < elev) {
+      const wallFrame = new PIXI.Rectangle(localX, localY, 2, localGridH);
+      const wallTex = new PIXI.Texture(texBase, wallFrame);
+      const wall = new PIXI.Sprite(wallTex);
+      
+      const wallWidth = 4;
+      wall.x = px - wallWidth;
+      wall.y = py - heightOffset;
+      wall.width = wallWidth;
+      wall.height = GRID;
+      wall.tint = 0x555555;
+      block.addChild(wall);
+    }
+
+    block.addChild(cap);
+    block.addChild(border);
+    container.addChild(block);
   }
 
-  // --- Contour lines ---
-  const drawnEdges = new Set();
-
-  for (const [key, elev] of Object.entries(map)) {
-    const [x, y] = key.split(',').map(Number);
-
-    for (const { dx, dy, side } of NEIGHBOR_DIRS) {
-      const nx = x + dx;
-      const ny = y + dy;
-      const neighborElev = getNeighborElev(map, nx, ny, cols, rows);
-      if (neighborElev === elev) continue;
-
-      // Deduplicate — each shared edge appears from both squares
-      const edgeKey = side === 'right'  ? `v:${x+1},${y}`
-                    : side === 'left'   ? `v:${x},${y}`
-                    : side === 'bottom' ? `h:${x},${y+1}`
-                    :                    `h:${x},${y}`;
-      if (drawnEdges.has(edgeKey)) continue;
-      drawnEdges.add(edgeKey);
-
-      const isVertical = side === 'right' || side === 'left';
-      const lx1 = isVertical ? (x + (side === 'right' ? 1 : 0)) * GRID : x * GRID;
-      const ly1 = isVertical ? y * GRID : (y + (side === 'bottom' ? 1 : 0)) * GRID;
-      const lx2 = isVertical ? lx1 : (x + 1) * GRID;
-      const ly2 = isVertical ? (y + 1) * GRID : ly1;
-
-      // Light halo pass
-      graphics.lineStyle(CONTOUR_LIGHT_WIDTH, 0xffffff, CONTOUR_LIGHT_ALPHA);
-      graphics.moveTo(lx1, ly1);
-      graphics.lineTo(lx2, ly2);
-
-      // Dark line pass
-      graphics.lineStyle(CONTOUR_DARK_WIDTH, 0x000000, CONTOUR_DARK_ALPHA);
-      graphics.moveTo(lx1, ly1);
-      graphics.lineTo(lx2, ly2);
-    }
-  }
-
-  canvas.stage.addChild(container);
+  // Add to primary so it sorts with other map elements
+  canvas.primary.addChild(container);
+  
+  // Final sort to apply the new zIndex logic
+  container.sortChildren();
 };
 
 export const clearElevationOverlay = () => {
   const existing = canvas.stage.getChildByName(ELEVATION_OVERLAY_NAME);
   if (existing) existing.destroy({ children: true, texture: false });
 };
+
+Hooks.on('refreshToken', async (token) => {
+  // Ensure the constant matches your renderElevationOverlay WALL_STEEPNESS
+  const STEEPNESS = Math.ceil(canvas.grid.size * 0.025); 
+  const elevation = Number(token.document.elevation || 0);
+  const visualOffset = elevation * STEEPNESS;
+
+
+    await token.document.update({
+      "texture.anchorY": 0.5 + (elevation === 0 ? 0 : elevation/35) // 0.5 is center, >0.5 moves texture down, <0.5 moves up
+    });
+
+
+  const squareElev = getSquareElevation({ x: Math.floor(token.x / canvas.grid.size), y: Math.floor(token.y / canvas.grid.size) });
+  console.log(`Token at (${token.x}, ${token.y}) has elevation ${elevation} and is on square with elevation ${squareElev}`);
+});
