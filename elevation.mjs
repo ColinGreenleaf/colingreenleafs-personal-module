@@ -286,7 +286,7 @@ export const selectForClearing = async () => {
   const { squares, cleanup } = result;
   try {
     for (const square of squares) {
-      await setSquareElevation(square, 0);
+      await clearSquareElevation(square);
     }
     // Re-render elevation labels after a short delay to ensure updates are applied
     renderElevationLabels();
