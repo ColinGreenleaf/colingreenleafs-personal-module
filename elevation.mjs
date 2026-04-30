@@ -340,6 +340,29 @@ const ELEVATION_OVERLAY_NAME = 'elevation-overlay-container';
 
 let _gradientTexture = null;
 let _gradientTextureSize = null;
+let _cornerTexture = null;
+
+const getCornerTexture = () => {
+  const size = canvas.grid.size;
+  if (_cornerTexture && _gradientTextureSize === size) return _cornerTexture;
+
+  const offscreen = document.createElement('canvas');
+  offscreen.width = size;
+  offscreen.height = size;
+  const ctx = offscreen.getContext('2d');
+
+  // Radial gradient: Starts solid at (0,0) and fades out at 40% of the tile
+  const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 0.4);
+  grad.addColorStop(0, 'rgba(0,0,0,1)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+
+  if (_cornerTexture) _cornerTexture.destroy();
+  _cornerTexture = PIXI.Texture.from(offscreen);
+  return _cornerTexture;
+};
 
 const getGradientTexture = () => {
   const size = canvas.grid.size;
@@ -371,12 +394,27 @@ const EDGE_ROTATIONS = {
   left:   { rotation: -Math.PI / 2,  anchorX: 1,   anchorY: 0   },
 };
 
+const CORNER_ROTATIONS = {
+  tl: { rotation: 0,             ax: 0, ay: 0},
+  tr: { rotation: Math.PI / 2,   ax: 0, ay: 1},
+  br: { rotation: Math.PI,       ax: 1, ay: 1}, // Adjusted for manual offset logic
+  bl: { rotation: -Math.PI / 2,  ax: 1, ay: 0}
+};
+
 const NEIGHBOR_DIRS = [
   { dx:  0, dy: -1, side: 'top'    },
   { dx:  1, dy:  0, side: 'right'  },
   { dx:  0, dy:  1, side: 'bottom' },
   { dx: -1, dy:  0, side: 'left'   },
 ];
+
+const DIAGONAL_DIRS = [
+  { dx: -1, dy: -1, corner: 'tl' }, // Top-Left
+  { dx:  1, dy: -1, corner: 'tr' }, // Top-Right
+  { dx:  1, dy:  1, corner: 'br' }, // Bottom-Right
+  { dx: -1, dy:  1, corner: 'bl' }  // Bottom-Left
+];
+
 
 const BASE_GRADIENT_STRENGTH = 0.6;
 const CONTOUR_DARK_ALPHA = 0.6;
@@ -445,6 +483,47 @@ export const renderElevationOverlay = () => {
     }
   }
 
+  // --- Corner Sprites ---
+  const cornerTex = getCornerTexture();
+  
+  for (const [key, elev] of Object.entries(map)) {
+    const [x, y] = key.split(',').map(Number);
+    const px = x * GRID;
+    const py = y * GRID;
+
+    for (const { dx, dy, corner } of DIAGONAL_DIRS) {
+      const diagElev = getNeighborElev(map, x + dx, y + dy, cols, rows);
+      if (diagElev <= elev) continue;
+
+      // OPTIONAL LOGIC: Only draw diagonal shadow if adjacent orthogonals aren't already higher
+      // This prevents "double-shadowing" where a linear shadow already exists.
+      const adj1 = getNeighborElev(map, x + dx, y, cols, rows);
+      const adj2 = getNeighborElev(map, x, y + dy, cols, rows);
+      if (adj1 > elev || adj2 > elev) continue;
+
+      const delta = diagElev - elev;
+      const alpha = BASE_GRADIENT_STRENGTH * Math.min(1, 0.2 + delta * 0.15);
+
+      const { rotation, ax, ay } = CORNER_ROTATIONS[corner];
+      const sprite = new PIXI.Sprite(cornerTex);
+      
+      sprite.width = GRID;
+      sprite.height = GRID;
+      sprite.alpha = alpha;
+      sprite.rotation = rotation;
+      sprite.anchor.set(ax, ay);
+      
+      // Using your existing offset style
+      const xOff = (corner === 'br' || corner === 'bl') ? -GRID : 0;
+      const yOff = (corner === 'tr' || corner === 'br') ? -GRID : 0;
+
+      sprite.x = px + (ax * GRID) + xOff;
+      sprite.y = py + (ay * GRID) + yOff;
+
+      gradientContainer.addChild(sprite);
+    }
+  }
+
   // --- Contour lines ---
   const drawnEdges = new Set();
 
@@ -483,7 +562,7 @@ export const renderElevationOverlay = () => {
     }
   }
 
-  canvas.stage.addChild(container);
+  canvas.primary.addChild(container);
 };
 
 export const clearElevationOverlay = () => {
