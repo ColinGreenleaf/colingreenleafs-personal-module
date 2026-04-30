@@ -1,6 +1,6 @@
 import {applyMarkWhenWearerDamaged, clearRevengeMarks, clearRevengeOnTurnEnd, applyRevengeStrikeEffects} from "./Trinkets/Echelon 1/RevengersWrap.mjs";
 import {dealSharedDamage} from "./Trinkets/Echelon 1/BloodboundBand.mjs";
-import {selectForAssignment, selectForClearing, renderElevationLabels, clearAllElevations, getSquareElevation} from "../elevation.mjs";
+import {selectForAssignment, selectForClearing, renderElevationOverlay, clearAllElevations, getSquareElevation} from "../elevation.mjs";
 
 const MODULE_ID = 'colingreenleafs-personal-module'
 const REVENGERS_WRAP_NAME = 'Revenger’s Wrap';
@@ -38,7 +38,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
       icon: 'fas fa-arrow-up',
       button: true,
       visible: game.user.isGM,
-      onClick: () => {selectForAssignment(), renderElevationLabels()}
+      onClick: () => {selectForAssignment(), renderElevationOverlay()}
     },
     'clear-elevation': {
       name: 'clear-elevation',
@@ -46,7 +46,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
       icon: 'fas fa-arrow-down',
       button: true,
       visible: game.user.isGM,
-      onClick: () => {selectForClearing(), renderElevationLabels()}
+      onClick: () => {selectForClearing(), renderElevationOverlay()}
     },
     'clear-all-elevation': {
       name: 'clear-all-elevation',
@@ -54,7 +54,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
       icon: 'fas fa-trash-alt',
       button: true,
       visible: game.user.isGM,
-      onClick: () => {clearAllElevations(), renderElevationLabels()}
+      onClick: () => {clearAllElevations(), renderElevationOverlay()}
     },
   });
 });
@@ -118,7 +118,7 @@ Hooks.on("ready", () => {
 
 });
 Hooks.on('canvasReady', () => {
-  renderElevationLabels();
+  renderElevationOverlay();
 });
 
 Hooks.on('updateToken', async (token, changes, options, userId) => {
