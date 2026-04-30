@@ -339,7 +339,7 @@ const getGradientTexture = () => {
   offscreen.height = size;
   const ctx = offscreen.getContext('2d');
 
-  const grad = ctx.createLinearGradient(0, 0, 0, size * 0.75);
+  const grad = ctx.createLinearGradient(0, 0, 0, size * 0.35);
   grad.addColorStop(0, 'rgba(0,0,0,1)');
   grad.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = grad;
@@ -369,12 +369,24 @@ const NEIGHBOR_DIRS = [
 const BASE_GRADIENT_STRENGTH = 0.55;
 const CONTOUR_DARK_ALPHA = 0.6;
 const CONTOUR_LIGHT_ALPHA = 0.3;
-const CONTOUR_DARK_WIDTH = 0.75;
-const CONTOUR_LIGHT_WIDTH = 1.5;
+const CONTOUR_DARK_WIDTH = 2;
+const CONTOUR_LIGHT_WIDTH = 2;
 
 const getNeighborElev = (map, x, y, cols, rows) => {
   if (x < 0 || y < 0 || x >= cols || y >= rows) return 0;
   return map[`${x},${y}`] ?? 0;
+};
+
+export const toggleElevationOverlay = () => {
+  const existing = canvas.stage.getChildByName(ELEVATION_OVERLAY_NAME);
+  if (existing) {
+    existing.destroy({ children: true, texture: false });
+  } else {
+    renderElevationOverlay();
+  }
+
+  ui.notifications.info('Elevation overlay ' + (existing ? 'hidden' : 'shown') + '.');
+  
 };
 
 export const renderElevationOverlay = () => {

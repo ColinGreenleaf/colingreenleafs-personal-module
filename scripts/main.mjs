@@ -1,6 +1,6 @@
 import {applyMarkWhenWearerDamaged, clearRevengeMarks, clearRevengeOnTurnEnd, applyRevengeStrikeEffects} from "./Trinkets/Echelon 1/RevengersWrap.mjs";
 import {dealSharedDamage} from "./Trinkets/Echelon 1/BloodboundBand.mjs";
-import {selectForAssignment, selectForClearing, renderElevationOverlay, clearAllElevations, getSquareElevation} from "../elevation.mjs";
+import {selectForAssignment, selectForClearing, renderElevationOverlay, toggleElevationOverlay, clearAllElevations, getSquareElevation} from "../elevation.mjs";
 
 const MODULE_ID = 'colingreenleafs-personal-module'
 const REVENGERS_WRAP_NAME = 'Revenger’s Wrap';
@@ -55,6 +55,14 @@ Hooks.on('getSceneControlButtons', (controls) => {
       button: true,
       visible: game.user.isGM,
       onClick: () => {clearAllElevations(), renderElevationOverlay()}
+    },
+    'toggle-elevation-overlay': {
+      name: 'toggle-elevation-overlay',
+      title: 'Toggle Elevation Overlay',
+      icon: 'fas fa-eye',
+      button: true,
+      visible: game.user.isGM,
+      onClick: () => {toggleElevationOverlay()}
     },
   });
 });
