@@ -2,6 +2,8 @@ import {applyMarkWhenWearerDamaged, clearRevengeMarks, clearRevengeOnTurnEnd, ap
 import {dealSharedDamage} from "./Trinkets/Echelon 1/BloodboundBand.mjs";
 import {selectForAssignment, selectForClearing, renderElevationLabels, clearAllElevations, getSquareElevation} from "../elevation.mjs";
 
+//TODOS: fix removed elevation reappearing when new squares are given elevation
+
 const MODULE_ID = 'colingreenleafs-personal-module'
 const REVENGERS_WRAP_NAME = 'Revenger’s Wrap';
 const BLOODBOUND_BAND_NAME = 'Bloodbound Band';
