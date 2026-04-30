@@ -76,63 +76,63 @@ export const clearAllElevations = async () => {
 /**
  * Draw elevation labels on tiles in the scene
  */
-export const renderElevationOverlay = () => {
-  // Remove existing elevation text from canvas
-  const existingText = canvas.stage.getChildByName('elevation-labels-container');
-  if (existingText) canvas.stage.removeChild(existingText);
+// export const renderElevationOverlay = () => {
+//   // Remove existing elevation text from canvas
+//   const existingText = canvas.stage.getChildByName('elevation-labels-container');
+//   if (existingText) canvas.stage.removeChild(existingText);
 
-  // Create a new container for elevation labels
-  const container = new PIXI.Container();
-  container.name = 'elevation-labels-container';
-  canvas.stage.addChild(container);
+//   // Create a new container for elevation labels
+//   const container = new PIXI.Container();
+//   container.name = 'elevation-labels-container';
+//   canvas.stage.addChild(container);
 
-  const squares = getSquaresWithElevation();
+//   const squares = getSquaresWithElevation();
   
-  // Create text labels for each square with elevation
-  squares.forEach(square => {
-    const elevation = square.elevation;
-    if (elevation === 0) return;
+//   // Create text labels for each square with elevation
+//   squares.forEach(square => {
+//     const elevation = square.elevation;
+//     if (elevation === 0) return;
 
-    const text = new PIXI.Text(elevation.toString(), {
-      fontFamily: 'Arial',
-      fontSize: Math.round(canvas.grid.size * 0.15),
-      fontWeight: 'normal',
-      fill: getElevationColor(elevation),
-      stroke: 0x000000,
-      strokeThickness: 2,
-      align: 'center'
-    });
+//     const text = new PIXI.Text(elevation.toString(), {
+//       fontFamily: 'Arial',
+//       fontSize: Math.round(canvas.grid.size * 0.15),
+//       fontWeight: 'normal',
+//       fill: getElevationColor(elevation),
+//       stroke: 0x000000,
+//       strokeThickness: 2,
+//       align: 'center'
+//     });
 
-    // const text = new PIXI.Text('*'.repeat(elevation), {
-    //   fontFamily: 'Arial',
-    //   fontSize: Math.round(canvas.grid.size * 0.15),
-    //   fontWeight: 'normal',
-    //   fill: getElevationColor(elevation),
-    //   stroke: 0x000000,
-    //   strokeThickness: 2,
-    //   align: 'center'
-    // });
+//     // const text = new PIXI.Text('*'.repeat(elevation), {
+//     //   fontFamily: 'Arial',
+//     //   fontSize: Math.round(canvas.grid.size * 0.15),
+//     //   fontWeight: 'normal',
+//     //   fill: getElevationColor(elevation),
+//     //   stroke: 0x000000,
+//     //   strokeThickness: 2,
+//     //   align: 'center'
+//     // });
 
-    text.anchor.set(0, 0);
-    text.x = square.x * canvas.grid.size;
-    text.y = square.y * canvas.grid.size;
-    text.zIndex = 1000;
-    text.alpha = 0.6;
+//     text.anchor.set(0, 0);
+//     text.x = square.x * canvas.grid.size;
+//     text.y = square.y * canvas.grid.size;
+//     text.zIndex = 1000;
+//     text.alpha = 0.6;
 
-    container.addChild(text);
-  });
+//     container.addChild(text);
+//   });
 
-  // Sort children to ensure proper rendering order
-  container.sortChildren();
-};
+//   // Sort children to ensure proper rendering order
+//   container.sortChildren();
+// };
 
 /**
  * Clear all elevation labels from the scene
  */
-export const clearElevationOverlay = () => {
-  const existingText = canvas.stage.getChildByName('elevation-labels-container');
-  if (existingText) canvas.stage.removeChild(existingText);
-};
+// export const clearElevationOverlay = () => {
+//   const existingText = canvas.stage.getChildByName('elevation-labels-container');
+//   if (existingText) canvas.stage.removeChild(existingText);
+// };
 
 /**
  * Select squares on the canvas for elevation setting
@@ -336,156 +336,156 @@ export const toggleElevationOverlay = () => {
 
 
 
-// const ELEVATION_OVERLAY_NAME = 'elevation-overlay-container';
+const ELEVATION_OVERLAY_NAME = 'elevation-overlay-container';
 
-// let _gradientTexture = null;
-// let _gradientTextureSize = null;
+let _gradientTexture = null;
+let _gradientTextureSize = null;
 
-// const getGradientTexture = () => {
-//   const size = canvas.grid.size;
-//   if (_gradientTexture && _gradientTextureSize === size) return _gradientTexture;
+const getGradientTexture = () => {
+  const size = canvas.grid.size;
+  if (_gradientTexture && _gradientTextureSize === size) return _gradientTexture;
 
-//   const offscreen = document.createElement('canvas');
-//   offscreen.width = size;
-//   offscreen.height = size;
-//   const ctx = offscreen.getContext('2d');
+  const offscreen = document.createElement('canvas');
+  offscreen.width = size;
+  offscreen.height = size;
+  const ctx = offscreen.getContext('2d');
 
-//   const grad = ctx.createLinearGradient(0, 0, 0, size * 0.35);
-//   grad.addColorStop(0, 'rgba(0,0,0,1)');
-//   grad.addColorStop(1, 'rgba(0,0,0,0)');
-//   ctx.fillStyle = grad;
-//   ctx.fillRect(0, 0, size, size);
+  const grad = ctx.createLinearGradient(0, 0, 0, size * 0.35);
+  grad.addColorStop(0, 'rgba(0,0,0,1)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
 
-//   if (_gradientTexture) _gradientTexture.destroy();
-//   _gradientTexture = PIXI.Texture.from(offscreen);
-//   _gradientTextureSize = size;
+  if (_gradientTexture) _gradientTexture.destroy();
+  _gradientTexture = PIXI.Texture.from(offscreen);
+  _gradientTextureSize = size;
 
-//   return _gradientTexture;
-// };
+  return _gradientTexture;
+};
 
-// const EDGE_ROTATIONS = {
-//   top:    { rotation: 0,             anchorX: 0,   anchorY: 0   },
-//   right:  { rotation: Math.PI / 2,   anchorX: 0,   anchorY: 1   },
-//   bottom: { rotation: Math.PI,       anchorX: 1,   anchorY: 1   },
-//   left:   { rotation: -Math.PI / 2,  anchorX: 1,   anchorY: 0   },
-// };
+const EDGE_ROTATIONS = {
+  top:    { rotation: 0,             anchorX: 0,   anchorY: 0   },
+  right:  { rotation: Math.PI / 2,   anchorX: 0,   anchorY: 1   },
+  bottom: { rotation: Math.PI,       anchorX: 1,   anchorY: 1   },
+  left:   { rotation: -Math.PI / 2,  anchorX: 1,   anchorY: 0   },
+};
 
-// const NEIGHBOR_DIRS = [
-//   { dx:  0, dy: -1, side: 'top'    },
-//   { dx:  1, dy:  0, side: 'right'  },
-//   { dx:  0, dy:  1, side: 'bottom' },
-//   { dx: -1, dy:  0, side: 'left'   },
-// ];
+const NEIGHBOR_DIRS = [
+  { dx:  0, dy: -1, side: 'top'    },
+  { dx:  1, dy:  0, side: 'right'  },
+  { dx:  0, dy:  1, side: 'bottom' },
+  { dx: -1, dy:  0, side: 'left'   },
+];
 
-// const BASE_GRADIENT_STRENGTH = 0.55;
-// const CONTOUR_DARK_ALPHA = 0.6;
-// const CONTOUR_LIGHT_ALPHA = 0.3;
-// const CONTOUR_DARK_WIDTH = 2;
-// const CONTOUR_LIGHT_WIDTH = 2;
+const BASE_GRADIENT_STRENGTH = 0.55;
+const CONTOUR_DARK_ALPHA = 0.6;
+const CONTOUR_LIGHT_ALPHA = 0.3;
+const CONTOUR_DARK_WIDTH = 2;
+const CONTOUR_LIGHT_WIDTH = 2;
 
-// const getNeighborElev = (map, x, y, cols, rows) => {
-//   if (x < 0 || y < 0 || x >= cols || y >= rows) return 0;
-//   return map[`${x},${y}`] ?? 0;
-// };
+const getNeighborElev = (map, x, y, cols, rows) => {
+  if (x < 0 || y < 0 || x >= cols || y >= rows) return 0;
+  return map[`${x},${y}`] ?? 0;
+};
 
-// export const renderElevationOverlay = () => {
-//   // Remove existing overlay
-//   const existing = canvas.stage.getChildByName(ELEVATION_OVERLAY_NAME);
-//   if (existing) {
-//     existing.destroy({ children: true, texture: false });
-//   }
+export const renderElevationOverlay = () => {
+  // Remove existing overlay
+  const existing = canvas.stage.getChildByName(ELEVATION_OVERLAY_NAME);
+  if (existing) {
+    existing.destroy({ children: true, texture: false });
+  }
 
-//   const map = getElevationMap();
-//   if (!Object.keys(map).length) return;
+  const map = getElevationMap();
+  if (!Object.keys(map).length) return;
 
-//   const GRID = canvas.grid.size;
-//   const cols = Math.ceil(canvas.dimensions.width / GRID);
-//   const rows = Math.ceil(canvas.dimensions.height / GRID);
+  const GRID = canvas.grid.size;
+  const cols = Math.ceil(canvas.dimensions.width / GRID);
+  const rows = Math.ceil(canvas.dimensions.height / GRID);
 
-//   const container = new PIXI.Container();
-//   container.name = ELEVATION_OVERLAY_NAME;
+  const container = new PIXI.Container();
+  container.name = ELEVATION_OVERLAY_NAME;
 
-//   const gradientContainer = new PIXI.Container();
-//   const graphics = new PIXI.Graphics();
+  const gradientContainer = new PIXI.Container();
+  const graphics = new PIXI.Graphics();
 
-//   container.addChild(gradientContainer);
-//   container.addChild(graphics);
+  container.addChild(gradientContainer);
+  container.addChild(graphics);
 
-//   const texture = getGradientTexture();
+  const texture = getGradientTexture();
 
-//   // --- Gradient sprites ---
-//   for (const [key, elev] of Object.entries(map)) {
-//     const [x, y] = key.split(',').map(Number);
-//     const px = x * GRID;
-//     const py = y * GRID;
+  // --- Gradient sprites ---
+  for (const [key, elev] of Object.entries(map)) {
+    const [x, y] = key.split(',').map(Number);
+    const px = x * GRID;
+    const py = y * GRID;
 
-//     for (const { dx, dy, side } of NEIGHBOR_DIRS) {
-//       const neighborElev = getNeighborElev(map, x + dx, y + dy, cols, rows);
-//       if (neighborElev <= elev) continue;
+    for (const { dx, dy, side } of NEIGHBOR_DIRS) {
+      const neighborElev = getNeighborElev(map, x + dx, y + dy, cols, rows);
+      if (neighborElev <= elev) continue;
 
-//       const delta = neighborElev - elev;
-//       const alpha = BASE_GRADIENT_STRENGTH * Math.min(1, 0.3 + delta * 0.2);
+      const delta = neighborElev - elev;
+      const alpha = BASE_GRADIENT_STRENGTH * Math.min(1, 0.3 + delta * 0.2);
 
-//       const { rotation, anchorX, anchorY } = EDGE_ROTATIONS[side];
+      const { rotation, anchorX, anchorY } = EDGE_ROTATIONS[side];
 
-//       const sprite = new PIXI.Sprite(texture);
-//       sprite.width = GRID;
-//       sprite.height = GRID;
-//       sprite.alpha = alpha;
-//       sprite.rotation = rotation;
-//       sprite.anchor.set(anchorX, anchorY);
-//       const bottom_off = (side === 'bottom') ? -GRID : 0; 
-//       const left_off = (side === 'left') ? -GRID : 0;
-//       const right_off = (side === 'right') ? -GRID : 0;
-//       sprite.x = px + (anchorX * GRID) + bottom_off + left_off; 
-//       sprite.y = py + (anchorY * GRID) + right_off + bottom_off; 
+      const sprite = new PIXI.Sprite(texture);
+      sprite.width = GRID;
+      sprite.height = GRID;
+      sprite.alpha = alpha;
+      sprite.rotation = rotation;
+      sprite.anchor.set(anchorX, anchorY);
+      const bottom_off = (side === 'bottom') ? -GRID : 0; 
+      const left_off = (side === 'left') ? -GRID : 0;
+      const right_off = (side === 'right') ? -GRID : 0;
+      sprite.x = px + (anchorX * GRID) + bottom_off + left_off; 
+      sprite.y = py + (anchorY * GRID) + right_off + bottom_off; 
 
-//       gradientContainer.addChild(sprite);
-//     }
-//   }
+      gradientContainer.addChild(sprite);
+    }
+  }
 
-//   // --- Contour lines ---
-//   const drawnEdges = new Set();
+  // --- Contour lines ---
+  const drawnEdges = new Set();
 
-//   for (const [key, elev] of Object.entries(map)) {
-//     const [x, y] = key.split(',').map(Number);
+  for (const [key, elev] of Object.entries(map)) {
+    const [x, y] = key.split(',').map(Number);
 
-//     for (const { dx, dy, side } of NEIGHBOR_DIRS) {
-//       const nx = x + dx;
-//       const ny = y + dy;
-//       const neighborElev = getNeighborElev(map, nx, ny, cols, rows);
-//       if (neighborElev === elev) continue;
+    for (const { dx, dy, side } of NEIGHBOR_DIRS) {
+      const nx = x + dx;
+      const ny = y + dy;
+      const neighborElev = getNeighborElev(map, nx, ny, cols, rows);
+      if (neighborElev === elev) continue;
 
-//       // Deduplicate — each shared edge appears from both squares
-//       const edgeKey = side === 'right'  ? `v:${x+1},${y}`
-//                     : side === 'left'   ? `v:${x},${y}`
-//                     : side === 'bottom' ? `h:${x},${y+1}`
-//                     :                    `h:${x},${y}`;
-//       if (drawnEdges.has(edgeKey)) continue;
-//       drawnEdges.add(edgeKey);
+      // Deduplicate — each shared edge appears from both squares
+      const edgeKey = side === 'right'  ? `v:${x+1},${y}`
+                    : side === 'left'   ? `v:${x},${y}`
+                    : side === 'bottom' ? `h:${x},${y+1}`
+                    :                    `h:${x},${y}`;
+      if (drawnEdges.has(edgeKey)) continue;
+      drawnEdges.add(edgeKey);
 
-//       const isVertical = side === 'right' || side === 'left';
-//       const lx1 = isVertical ? (x + (side === 'right' ? 1 : 0)) * GRID : x * GRID;
-//       const ly1 = isVertical ? y * GRID : (y + (side === 'bottom' ? 1 : 0)) * GRID;
-//       const lx2 = isVertical ? lx1 : (x + 1) * GRID;
-//       const ly2 = isVertical ? (y + 1) * GRID : ly1;
+      const isVertical = side === 'right' || side === 'left';
+      const lx1 = isVertical ? (x + (side === 'right' ? 1 : 0)) * GRID : x * GRID;
+      const ly1 = isVertical ? y * GRID : (y + (side === 'bottom' ? 1 : 0)) * GRID;
+      const lx2 = isVertical ? lx1 : (x + 1) * GRID;
+      const ly2 = isVertical ? (y + 1) * GRID : ly1;
 
-//       // Light halo pass
-//       graphics.lineStyle(CONTOUR_LIGHT_WIDTH, 0xffffff, CONTOUR_LIGHT_ALPHA);
-//       graphics.moveTo(lx1, ly1);
-//       graphics.lineTo(lx2, ly2);
+      // Light halo pass
+      graphics.lineStyle(CONTOUR_LIGHT_WIDTH, 0xffffff, CONTOUR_LIGHT_ALPHA);
+      graphics.moveTo(lx1, ly1);
+      graphics.lineTo(lx2, ly2);
 
-//       // Dark line pass
-//       graphics.lineStyle(CONTOUR_DARK_WIDTH, 0x000000, CONTOUR_DARK_ALPHA);
-//       graphics.moveTo(lx1, ly1);
-//       graphics.lineTo(lx2, ly2);
-//     }
-//   }
+      // Dark line pass
+      graphics.lineStyle(CONTOUR_DARK_WIDTH, 0x000000, CONTOUR_DARK_ALPHA);
+      graphics.moveTo(lx1, ly1);
+      graphics.lineTo(lx2, ly2);
+    }
+  }
 
-//   canvas.stage.addChild(container);
-// };
+  canvas.stage.addChild(container);
+};
 
-// export const clearElevationOverlay = () => {
-//   const existing = canvas.stage.getChildByName(ELEVATION_OVERLAY_NAME);
-//   if (existing) existing.destroy({ children: true, texture: false });
-// };
+export const clearElevationOverlay = () => {
+  const existing = canvas.stage.getChildByName(ELEVATION_OVERLAY_NAME);
+  if (existing) existing.destroy({ children: true, texture: false });
+};
