@@ -352,6 +352,7 @@ const getGradientTexture = () => {
 
   const grad = ctx.createLinearGradient(0, 0, 0, size * 0.35);
   grad.addColorStop(0, 'rgba(0,0,0,1)');
+  // grad.addColorStop(0.3, 'rgba(0,0,0,1)');
   grad.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, size, size);
@@ -377,7 +378,7 @@ const NEIGHBOR_DIRS = [
   { dx: -1, dy:  0, side: 'left'   },
 ];
 
-const BASE_GRADIENT_STRENGTH = 0.55;
+const BASE_GRADIENT_STRENGTH = 0.6;
 const CONTOUR_DARK_ALPHA = 0.6;
 const CONTOUR_LIGHT_ALPHA = 0.3;
 const CONTOUR_DARK_WIDTH = 2;
