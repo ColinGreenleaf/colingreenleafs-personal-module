@@ -38,7 +38,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
       icon: 'fas fa-arrow-up',
       button: true,
       visible: game.user.isGM,
-      onClick: () => {selectForAssignment(), renderElevationOverlay()}
+      onClick: () => {selectForAssignment()}
     },
     'clear-elevation': {
       name: 'clear-elevation',
@@ -46,7 +46,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
       icon: 'fas fa-arrow-down',
       button: true,
       visible: game.user.isGM,
-      onClick: () => {selectForClearing(), renderElevationOverlay()}
+      onClick: () => {selectForClearing()}
     },
     'clear-all-elevation': {
       name: 'clear-all-elevation',
@@ -54,7 +54,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
       icon: 'fas fa-trash-alt',
       button: true,
       visible: game.user.isGM,
-      onClick: () => {clearAllElevations(), renderElevationOverlay()}
+      onClick: () => {clearAllElevations()}
     },
     'toggle-elevation-overlay': {
       name: 'toggle-elevation-overlay',

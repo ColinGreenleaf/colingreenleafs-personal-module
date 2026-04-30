@@ -429,7 +429,7 @@ const getNeighborElev = (map, x, y, cols, rows) => {
 
 export const renderElevationOverlay = () => {
   // Remove existing overlay
-  const existing = canvas.stage.getChildByName(ELEVATION_OVERLAY_NAME);
+  const existing = canvas.primary.getChildByName(ELEVATION_OVERLAY_NAME);
   if (existing) {
     existing.destroy({ children: true, texture: false });
   }
