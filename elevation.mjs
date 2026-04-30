@@ -342,7 +342,7 @@ const getCornerTexture = () => {
     offscreen.width = size;
     offscreen.height = size;
     const ctx = offscreen.getContext('2d');
-    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 0.4);
+    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 0.35);
     grad.addColorStop(0, 'rgba(0,0,0,1)');
     grad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = grad;
@@ -539,11 +539,13 @@ const runHoverTool = () => {
     const stage = canvas.app.stage;
     const graphics = new PIXI.Graphics();
     const overlay = new PIXI.Container();
+
+    const GRID = canvas.grid.size;
     
     // Create a floating label to show the elevation number
     const label = new PIXI.Text("", {
       fontFamily: 'Arial',
-      fontSize: 36,
+      fontSize: Math.ceil(GRID * 0.5),
       fill: 0xffffff,
       stroke: 0x000000,
       strokeThickness: 4,
@@ -558,7 +560,7 @@ const runHoverTool = () => {
     stage.addChild(label);
     stage.addChild(overlay);
 
-    const GRID = canvas.grid.size;
+    
 
     const drawHighlights = (hoverSquare, mousePos) => {
       graphics.clear();
@@ -567,9 +569,9 @@ const runHoverTool = () => {
       const color = getElevationColor(hoverElevation);
       
       // Update the floating label
-      label.text = `Elev: ${hoverElevation}`;
-      label.x = mousePos.x + 20; // Offset from cursor
-      label.y = mousePos.y - 20;
+      label.text = `${hoverElevation}`;
+      label.x = mousePos.x; // Offset from cursor
+      label.y = mousePos.y - GRID * 0.5;
       label.style.fill = color;
 
       // Highlight all squares with the same elevation
