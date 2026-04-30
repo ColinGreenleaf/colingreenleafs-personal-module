@@ -1,4 +1,4 @@
-const { ApplicationV2 } = foundry.applications.api;
+// const { ApplicationV2 } = foundry.applications.api;
 
 const ELEVATION_FLAG_KEY = 'elevation-levels';
 const MODULE_NAME = 'colingreenleafs-personal-module';
@@ -18,11 +18,15 @@ const getElevationColor = (elevation) => {
 };
 
 const getElevationMap = () => {
-  return canvas.scene?.getFlag(MODULE_NAME, ELEVATION_FLAG_KEY) ?? {};
+  return canvas.scene.getFlag(MODULE_NAME, ELEVATION_FLAG_KEY) ?? {};
 };
 
 const setElevationMap = async (map) => {
-  await canvas.scene.setFlag(MODULE_NAME, ELEVATION_FLAG_KEY, map);
+  //unset all flags, the set new map
+  await canvas.scene.unsetFlag(MODULE_NAME, ELEVATION_FLAG_KEY);
+  if (Object.keys(map).length > 0) {
+    await canvas.scene.setFlag(MODULE_NAME, ELEVATION_FLAG_KEY, map);
+  }
 };
 
 const toKey = (square) => `${square.x},${square.y}`;
@@ -35,7 +39,7 @@ export const getSquareElevation = (square) => {
 
 // Set elevation for a specific square
 export const setSquareElevation = async (square, elevation) => {
-  const map = getElevationMap();
+  const map = foundry.utils.deepClone(getElevationMap());
   const key = toKey(square);
 
   if (elevation === 0) {
@@ -294,3 +298,21 @@ export const selectForClearing = async () => {
     cleanup();
   }
 };
+
+Hooks.on('updateScene', (scene, delta) => {
+  // Only react if it's the currently viewed scene
+  if (scene.id !== canvas.scene?.id) return;
+  
+  // Only react if our elevation flag was part of the update
+  const elevationChanged = foundry.utils.hasProperty(
+    delta, 
+    `flags.${MODULE_NAME}.${ELEVATION_FLAG_KEY}`
+  ) || foundry.utils.hasProperty(
+    delta,
+    `flags.${MODULE_NAME}.-=${ELEVATION_FLAG_KEY}`
+  );
+
+  if (!elevationChanged) return;
+
+  renderElevationLabels();
+});
