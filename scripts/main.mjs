@@ -1,20 +1,10 @@
 import {applyMarkWhenWearerDamaged, clearRevengeMarks, clearRevengeOnTurnEnd, applyRevengeStrikeEffects} from "./Trinkets/Echelon 1/RevengersWrap.mjs";
 import {dealSharedDamage} from "./Trinkets/Echelon 1/BloodboundBand.mjs";
-import {remindColorCloakEffects} from "./Trinkets/Echelon 1/ColorCloaks.mjs";
-import {remindAndApplyHelmEffects} from "./Trinkets/Echelon 1/HellchargerHelm.mjs";
-import {remindWhenWearerDamaged} from "./Leveled Treasures/Armor/KuranzoiPrismscale.mjs";
 import {selectForAssignment, selectForClearing, renderElevationLabels, clearAllElevations, getSquareElevation} from "../elevation.mjs";
-
-
-//TODO: add additinal checks so that each hook doesn't run it's code unless the conditions are met.
-//this could potentially be collapsing all alike hooks together and adding check functions for each item to see if the item is involved in the tirggering event
 
 const MODULE_ID = 'colingreenleafs-personal-module'
 const REVENGERS_WRAP_NAME = 'Revenger’s Wrap';
 const BLOODBOUND_BAND_NAME = 'Bloodbound Band';
-// const COLOR_CLOAKS_NAMES = ['Color Cloak (Blue)', 'Color Cloak (Red)', 'Color Cloak (Yellow)'];
-// const HELLCHARGER_HELM_NAME = 'Hellcharger Helm';
-// const KURANZOI_PRISMSCALE_NAME = "Kuran’zoi Prismscale";
 
 Hooks.on("init", function() {
   console.log("This code runs once the Foundry VTT software begins its initialization workflow.");
@@ -38,10 +28,9 @@ const addTools = (control, tools) => {
   }
 };
 
-
+//add buttons to the wall controls for selecting squares to assign elevation to, selecting squares to clear elevation from, and clearing all elevation markers from the map
 Hooks.on('getSceneControlButtons', (controls) => {
   const wallControl  = controls.walls  || controls.wall;
-
   addTools(wallControl, {
     'elevation': {
       name: 'elevation',
@@ -49,7 +38,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
       icon: 'fas fa-arrow-up',
       button: true,
       visible: game.user.isGM,
-      onClick: () => selectForAssignment()
+      onClick: () => {selectForAssignment(), renderElevationLabels()}
     },
     'clear-elevation': {
       name: 'clear-elevation',
@@ -57,7 +46,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
       icon: 'fas fa-arrow-down',
       button: true,
       visible: game.user.isGM,
-      onClick: () => selectForClearing()
+      onClick: () => {selectForClearing(), renderElevationLabels()}
     },
     'clear-all-elevation': {
       name: 'clear-all-elevation',
@@ -65,7 +54,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
       icon: 'fas fa-trash-alt',
       button: true,
       visible: game.user.isGM,
-      onClick: () => clearAllElevations()
+      onClick: () => {clearAllElevations(), renderElevationLabels()}
     },
   });
 });
@@ -126,9 +115,6 @@ Hooks.on("ready", () => {
   //once the game is ready, check which settings are enabled and activate the corresponding functionality for each item
   if (game.settings.get(MODULE_ID, "revengersWrap"))    toggleRevengersWrap(true);
   if (game.settings.get(MODULE_ID, "bloodboundBand"))   toggleBloodboundBand(true);
-  // if (game.settings.get(MODULE_ID, "colorCloaks"))      toggleColorCloaks(true);
-  // if (game.settings.get(MODULE_ID, "hellchargerHelm"))  toggleHellchargerHelm(true);
-  // if (game.settings.get(MODULE_ID, "kuranzoiPrismscale")) toggleKuranzoiPrismscale(true);
 
 });
 Hooks.on('canvasReady', () => {
