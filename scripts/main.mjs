@@ -82,7 +82,10 @@ const addTools = (control, tools) => {
 Hooks.once("init", () => {
   registerSettings();
   registerModuleButtons();
+
+  
 });
+
 
 Hooks.on("ready", () => {
   //once the game is ready, check which settings are enabled and activate the corresponding functionality for each item

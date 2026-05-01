@@ -1,20 +1,20 @@
-// const { ApplicationV2 } = foundry.applications.api;
-
 const ELEVATION_FLAG_KEY = 'elevation-levels';
 const MODULE_NAME = 'colingreenleafs-personal-module';
 
-const ELEVATION_COLORS = {
-  0: 0xffffff,  // White for ground level
-  1: 0xffff00,  // Yellow
-  2: 0xff8800,  // Orange
-  3: 0xff0000,  // Red
-  4: 0xff00ff,  // Magenta
-  5: 0x00ffff,  // Cyan
-  6: 0x00ff00,   // Green
-};
+// const ELEVATION_COLORS = {
+//   0: 0xffffff,  // White for ground level
+//   1: 0xffff00,  // Yellow
+//   2: 0xff8800,  // Orange
+//   3: 0xff0000,  // Red
+//   4: 0xff00ff,  // Magenta
+//   5: 0x00ffff,  // Cyan
+//   6: 0x00ff00,   // Green
+// };
 
 const getElevationColor = (elevation) => {
-  return ELEVATION_COLORS[elevation] || ELEVATION_COLORS[0];
+  const elevColorString = game.settings.get(MODULE_NAME, `ElevationColor${elevation}`)
+  const colorNum = Number(Color.from(elevColorString))
+  return colorNum;
 };
 
 const getElevationMap = () => {
@@ -72,67 +72,6 @@ export const clearAllElevations = async () => {
   clearElevationOverlay();
   ui.notifications.info('All elevation markers have been cleared.');
 };
-
-/**
- * Draw elevation labels on tiles in the scene
- */
-// export const renderElevationOverlay = () => {
-//   // Remove existing elevation text from canvas
-//   const existingText = canvas.stage.getChildByName('elevation-labels-container');
-//   if (existingText) canvas.stage.removeChild(existingText);
-
-//   // Create a new container for elevation labels
-//   const container = new PIXI.Container();
-//   container.name = 'elevation-labels-container';
-//   canvas.stage.addChild(container);
-
-//   const squares = getSquaresWithElevation();
-  
-//   // Create text labels for each square with elevation
-//   squares.forEach(square => {
-//     const elevation = square.elevation;
-//     if (elevation === 0) return;
-
-//     const text = new PIXI.Text(elevation.toString(), {
-//       fontFamily: 'Arial',
-//       fontSize: Math.round(canvas.grid.size * 0.15),
-//       fontWeight: 'normal',
-//       fill: getElevationColor(elevation),
-//       stroke: 0x000000,
-//       strokeThickness: 2,
-//       align: 'center'
-//     });
-
-//     // const text = new PIXI.Text('*'.repeat(elevation), {
-//     //   fontFamily: 'Arial',
-//     //   fontSize: Math.round(canvas.grid.size * 0.15),
-//     //   fontWeight: 'normal',
-//     //   fill: getElevationColor(elevation),
-//     //   stroke: 0x000000,
-//     //   strokeThickness: 2,
-//     //   align: 'center'
-//     // });
-
-//     text.anchor.set(0, 0);
-//     text.x = square.x * canvas.grid.size;
-//     text.y = square.y * canvas.grid.size;
-//     text.zIndex = 1000;
-//     text.alpha = 0.6;
-
-//     container.addChild(text);
-//   });
-
-//   // Sort children to ensure proper rendering order
-//   container.sortChildren();
-// };
-
-/**
- * Clear all elevation labels from the scene
- */
-// export const clearElevationOverlay = () => {
-//   const existingText = canvas.stage.getChildByName('elevation-labels-container');
-//   if (existingText) canvas.stage.removeChild(existingText);
-// };
 
 /**
  * Select squares on the canvas for elevation setting
@@ -529,7 +468,7 @@ export const renderGradient = () => {
         }
     }
 
-    // 3. CONTOUR LINES (Drawn between any mismatch)
+    // 3. CONTOUR LINES 
     const drawnEdges = new Set();
     for (const [key, elev] of Object.entries(map)) {
         const [x, y] = key.split(',').map(Number);
@@ -582,7 +521,7 @@ export const renderColorTiles = () => {
     for (const square of squares) {
       const color = getElevationColor(square.elevation);
 
-        graphics.beginFill(color, 0.3);
+        graphics.beginFill(color, game.settings.get(MODULE_NAME, `ColorTileOpacity`));
         graphics.drawRect(square.x * GRID, square.y * GRID, GRID, GRID);
         graphics.endFill();
       
