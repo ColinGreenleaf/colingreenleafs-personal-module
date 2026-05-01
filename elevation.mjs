@@ -370,6 +370,24 @@ const getGradientTexture = () => {
     return _gradientTexture;
 };
 
+// const getColorTexture = (colorHex) => {
+//     const size = canvas.grid.size;
+//     if (_colorTexture && _ColorTextureSize === size) return _colorTexture;
+//     const offscreen = document.createElement('canvas');
+//     offscreen.width = size;
+//     offscreen.height = size;
+//     const ctx = offscreen.getContext('2d');
+//     const grad = ctx.createPattern
+//     grad.addColorStop(0, 'rgba(0,0,0,1)');
+//     grad.addColorStop(1, 'rgba(0,0,0,0)');
+//     ctx.fillStyle = grad;
+//     ctx.fillRect(0, 0, size, size);
+//     if (_gradientTexture) _gradientTexture.destroy();
+//     _gradientTexture = PIXI.Texture.from(offscreen);
+//     _gradientTextureSize = size;
+//     return _gradientTexture;
+// };
+
 // Map of where the shadow should appear RELATIVE to the high square
 const SHADOW_PUSH = [
     { dx:  0, dy: -1, side: 'bottom' }, // Shadow on North neighbor's bottom edge
@@ -404,6 +422,25 @@ const CONTOUR_DARK_ALPHA = 0.6;
 const CONTOUR_LIGHT_ALPHA = 0.3;
 
 export const renderElevationOverlay = () => {
+  if (!game.settings.get(MODULE_NAME, "OverlayVisualization")) return; 
+
+  const overlayMode = game.settings.get(MODULE_NAME, "OverlayStyle");
+
+  if (overlayMode === 'gradient') {
+    renderGradient();
+    console.log('rendering gradient overlay')
+  } else if (overlayMode === 'color') {
+    renderColorTiles();
+    console.log('rendering color tile overlay')
+  }
+  const drawNumbers = game.settings.get(MODULE_NAME, "NumberOverlay");
+  if (drawNumbers) {
+    renderNumbers();
+    console.log('rendering numbers')
+  }
+}
+
+export const renderGradient = () => {
     // FIX: Consistently check and use canvas.primary
     const existing = canvas.primary.getChildByName(ELEVATION_OVERLAY_NAME);
     if (existing) existing.destroy({ children: true, texture: false });
@@ -522,6 +559,116 @@ export const renderElevationOverlay = () => {
 
     canvas.primary.addChild(container);
 };
+
+export const renderColorTiles = () => {
+  // FIX: Consistently check and use canvas.primary
+    const existing = canvas.primary.getChildByName(ELEVATION_OVERLAY_NAME);
+    if (existing) existing.destroy({ children: true, texture: false });
+
+    const map = getElevationMap();
+    if (!Object.keys(map).length) return;
+
+    const GRID = canvas.grid.size;
+    const container = new PIXI.Container();
+    container.name = ELEVATION_OVERLAY_NAME;
+
+    const graphics = new PIXI.Graphics();
+    container.addChild(graphics);
+    const squares = getSquaresWithElevation();
+
+    graphics.clear();
+
+    // Iterate through squares with elevation and draw its appropriate color
+    for (const square of squares) {
+      const color = getElevationColor(square.elevation);
+
+        graphics.beginFill(color, 0.3);
+        graphics.drawRect(square.x * GRID, square.y * GRID, GRID, GRID);
+        graphics.endFill();
+      
+
+    };
+
+    // CONTOUR LINES (Drawn between any mismatch)
+    // const drawnEdges = new Set();
+    // for (const [key, elev] of Object.entries(map)) {
+    //     const [x, y] = key.split(',').map(Number);
+        
+    //     for (const { dx, dy } of [{dx:0, dy:-1}, {dx:1, dy:0}, {dx:0, dy:1}, {dx:-1, dy:0}]) {
+    //         const neighborElev = map[`${x+dx},${y+dy}`] ?? 0;
+    //         if (neighborElev === elev) continue;
+
+    //         // Generate unique edge key to avoid double-drawing
+    //         const side = dx === 1 ? 'r' : dx === -1 ? 'l' : dy === 1 ? 'b' : 't';
+    //         const edgeKey = side === 'r' ? `v:${x+1},${y}` : side === 'l' ? `v:${x},${y}` : side === 'b' ? `h:${x},${y+1}` : `h:${x},${y}`;
+    //         if (drawnEdges.has(edgeKey)) continue;
+    //         drawnEdges.add(edgeKey);
+
+    //         const isV = side === 'r' || side === 'l';
+    //         const lx1 = isV ? (x + (side === 'r' ? 1 : 0)) * GRID : x * GRID;
+    //         const ly1 = isV ? y * GRID : (y + (side === 'b' ? 1 : 0)) * GRID;
+    //         const lx2 = isV ? lx1 : (x + 1) * GRID;
+    //         const ly2 = isV ? (y + 1) * GRID : ly1;
+
+    //         graphics.lineStyle(2, 0xffffff, CONTOUR_LIGHT_ALPHA);
+    //         graphics.moveTo(lx1, ly1).lineTo(lx2, ly2);
+    //         graphics.lineStyle(2, 0x000000, CONTOUR_DARK_ALPHA);
+    //         graphics.moveTo(lx1, ly1).lineTo(lx2, ly2);
+    //     }
+    // }
+
+    canvas.primary.addChild(container);
+}
+
+export const renderNumbers = () => {
+    // Remove existing elevation text from canvas
+  const existingText = canvas.stage.getChildByName('elevation-labels-container');
+  if (existingText) canvas.stage.removeChild(existingText);
+
+  // Create a new container for elevation labels
+  const container = new PIXI.Container();
+  container.name = 'elevation-labels-container';
+  canvas.stage.addChild(container);
+
+  const squares = getSquaresWithElevation();
+  
+  // Create text labels for each square with elevation
+  squares.forEach(square => {
+    const elevation = square.elevation;
+    if (elevation === 0) return;
+
+    const text = new PIXI.Text(elevation.toString(), {
+      fontFamily: 'Arial',
+      fontSize: Math.round(canvas.grid.size * 0.15),
+      fontWeight: 'normal',
+      fill: (game.settings.get(MODULE_NAME, 'NumberOverlayColor') ? getElevationColor(elevation) : 0x000000),
+      stroke: 0x000000,
+      strokeThickness: (game.settings.get(MODULE_NAME, 'NumberOverlayColor') ? 2 : 0),
+      align: 'center'
+    });
+
+    // const text = new PIXI.Text('*'.repeat(elevation), {
+    //   fontFamily: 'Arial',
+    //   fontSize: Math.round(canvas.grid.size * 0.15),
+    //   fontWeight: 'normal',
+    //   fill: getElevationColor(elevation),
+    //   stroke: 0x000000,
+    //   strokeThickness: 2,
+    //   align: 'center'
+    // });
+
+    text.anchor.set(0, 0);
+    text.x = square.x * canvas.grid.size;
+    text.y = square.y * canvas.grid.size;
+    text.zIndex = 1000;
+    text.alpha = 0.6;
+
+    container.addChild(text);
+  });
+
+  // Sort children to ensure proper rendering order
+  container.sortChildren();
+}
 
 export const clearElevationOverlay = () => {
     const existing = canvas.primary.getChildByName(ELEVATION_OVERLAY_NAME);
