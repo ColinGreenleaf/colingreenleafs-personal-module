@@ -1,16 +1,12 @@
 const ELEVATION_FLAG_KEY = 'elevation-levels';
 const MODULE_NAME = 'colingreenleafs-personal-module';
+const ELEVATION_OVERLAY_NAME = 'elevation-overlay-container';
 
-// const ELEVATION_COLORS = {
-//   0: 0xffffff,  // White for ground level
-//   1: 0xffff00,  // Yellow
-//   2: 0xff8800,  // Orange
-//   3: 0xff0000,  // Red
-//   4: 0xff00ff,  // Magenta
-//   5: 0x00ffff,  // Cyan
-//   6: 0x00ff00,   // Green
-// };
-
+/** _____________________________________________
+ *
+ * UTILITY FUNCTIONS / GETTERS AND SETTERS
+ * ______________________________________________
+*/ 
 const getElevationColor = (elevation) => {
   const elevColorString = game.settings.get(MODULE_NAME, `ElevationColor${elevation}`)
   const colorNum = Number(Color.from(elevColorString))
@@ -73,8 +69,12 @@ export const clearAllElevations = async () => {
   ui.notifications.info('All elevation markers have been cleared.');
 };
 
+
+
+
+
 /**
- * Select squares on the canvas for elevation setting
+ * utility function to allow for simple selection of squares
  */
 export const selectSquares = () => {
   return new Promise((resolve) => {
@@ -169,7 +169,11 @@ export const selectSquares = () => {
   });
 };
 
-// Export the elevation tool function for use in main.mjs
+/* ___________________________________________________
+ *
+ * Elevation Builder Tool Function
+ * ___________________________________________________
+ */
 export const selectForAssignment = async () => {
   ui.notifications.info('Click on tiles to select them for elevation setting. Press Enter to confirm or Escape to cancel.');
   const result = await selectSquares();
@@ -217,6 +221,11 @@ export const selectForAssignment = async () => {
   }
 };
 
+/* ___________________________________________________
+ *
+ * Elevation Remover Tool Function
+ * ___________________________________________________
+ */
 export const selectForClearing = async () => {
   ui.notifications.info('Click on tiles to select them for elevation clearing. Press Enter to confirm or Escape to cancel.');
   const result = await selectSquares();
@@ -238,6 +247,8 @@ export const selectForClearing = async () => {
   }
 };
 
+
+// re-render elevation overlay if the flag changed
 Hooks.on('updateScene', (scene, delta) => {
   // Only react if it's the currently viewed scene
   if (scene.id !== canvas.scene?.id) return;
@@ -256,19 +267,6 @@ Hooks.on('updateScene', (scene, delta) => {
   renderElevationOverlay();
 });
 
-export const toggleElevationOverlay = () => {
-  const existing = canvas.primary.getChildByName(ELEVATION_OVERLAY_NAME);
-  if (existing) {
-    existing.destroy({ children: true, texture: false });
-  } else {
-    renderElevationOverlay();
-  }
-
-  ui.notifications.info('Elevation overlay ' + (existing ? 'hidden' : 'shown') + '.');
-  
-};
-
-const ELEVATION_OVERLAY_NAME = 'elevation-overlay-container';
 
 let _gradientTexture = null;
 let _gradientTextureSize = null;
@@ -308,24 +306,6 @@ const getGradientTexture = () => {
     _gradientTextureSize = size;
     return _gradientTexture;
 };
-
-// const getColorTexture = (colorHex) => {
-//     const size = canvas.grid.size;
-//     if (_colorTexture && _ColorTextureSize === size) return _colorTexture;
-//     const offscreen = document.createElement('canvas');
-//     offscreen.width = size;
-//     offscreen.height = size;
-//     const ctx = offscreen.getContext('2d');
-//     const grad = ctx.createPattern
-//     grad.addColorStop(0, 'rgba(0,0,0,1)');
-//     grad.addColorStop(1, 'rgba(0,0,0,0)');
-//     ctx.fillStyle = grad;
-//     ctx.fillRect(0, 0, size, size);
-//     if (_gradientTexture) _gradientTexture.destroy();
-//     _gradientTexture = PIXI.Texture.from(offscreen);
-//     _gradientTextureSize = size;
-//     return _gradientTexture;
-// };
 
 // Map of where the shadow should appear RELATIVE to the high square
 const SHADOW_PUSH = [

@@ -1,6 +1,6 @@
 import {applyMarkWhenWearerDamaged, clearRevengeMarks, clearRevengeOnTurnEnd, applyRevengeStrikeEffects} from "./Trinkets/Echelon 1/RevengersWrap.mjs";
 import {dealSharedDamage} from "./Trinkets/Echelon 1/BloodboundBand.mjs";
-import {selectForAssignment, selectForClearing, renderElevationOverlay, toggleElevationOverlay, clearAllElevations, getSquareElevation, checkSquareElevation} from "../elevation.mjs";
+import {selectForAssignment, selectForClearing, renderElevationOverlay, clearAllElevations, getSquareElevation, checkSquareElevation} from "../elevation.mjs";
 import {registerSettings } from "../elevation-settings.mjs";
 import {registerModuleButtons} from "../module-buttons.mjs";;
 
@@ -27,53 +27,6 @@ const addTools = (control, tools) => {
     }
   }
 };
-
-// //add buttons to the wall controls for selecting squares to assign elevation to, selecting squares to clear elevation from, and clearing all elevation markers from the map
-// Hooks.on('getSceneControlButtons', (controls) => {
-//   const wallControl  = controls.walls  || controls.wall;
-//   addTools(wallControl, {
-//     'elevation': {
-//       name: 'elevation',
-//       title: 'Elevation Designer',
-//       icon: 'fas fa-arrow-up',
-//       button: true,
-//       visible: game.user.isGM,
-//       onClick: () => {selectForAssignment()}
-//     },
-//     'clear-elevation': {
-//       name: 'clear-elevation',
-//       title: 'Elevation Remover',
-//       icon: 'fas fa-arrow-down',
-//       button: true,
-//       visible: game.user.isGM,
-//       onClick: () => {selectForClearing()}
-//     },
-//     'clear-all-elevation': {
-//       name: 'clear-all-elevation',
-//       title: 'Clear All Elevation Markers',
-//       icon: 'fas fa-trash-alt',
-//       button: true,
-//       visible: game.user.isGM,
-//       onClick: () => {clearAllElevations()}
-//     },
-//     'toggle-elevation-overlay': {
-//       name: 'toggle-elevation-overlay',
-//       title: 'Toggle Elevation Overlay',
-//       icon: 'fas fa-eye',
-//       button: true,
-//       visible: game.user.isGM,
-//       onClick: () => {toggleElevationOverlay()}
-//     },
-//     'check-elevation': {
-//       name: 'check-elevation',
-//       title: 'Check Elevation',
-//       icon: 'fas fa-search',
-//       button: true,
-//       visible: game.user.isGM,
-//       onClick: () => {checkSquareElevation()}
-//     },
-//   });
-// });
 
 /* -------------------------------------------------- */
 /*   Initialization                                   */

@@ -1,4 +1,4 @@
-import {selectForAssignment, selectForClearing, renderElevationOverlay, toggleElevationOverlay, clearAllElevations, getSquareElevation, checkSquareElevation} from "./elevation.mjs";
+import {selectForAssignment, selectForClearing, renderElevationOverlay, clearAllElevations, getSquareElevation, checkSquareElevation} from "./elevation.mjs";
 
 
 export const registerModuleButtons = () => {
@@ -45,14 +45,6 @@ export const registerModuleButtons = () => {
         button: true,
         visible: game.user.isGM,
         onClick: () => {clearAllElevations()}
-        },
-        'toggle-elevation-overlay': {
-        name: 'toggle-elevation-overlay',
-        title: 'Toggle Elevation Overlay',
-        icon: 'fas fa-eye',
-        button: true,
-        visible: game.user.isGM,
-        onClick: () => {toggleElevationOverlay()}
         },
         'check-elevation': {
         name: 'check-elevation',
