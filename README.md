@@ -4,6 +4,4 @@
 
 - merge branches back to main (minus 2.5D) and set different overlay views as settings
 
-- create new overlay view: colored squares (contour around like elecations, new color for each elevations)
-
 - make elevation colors customizable
