@@ -13,17 +13,25 @@
         "Name": "Color Cloaks",
         "Hint": "Enable the Color Cloaks' trigger reminders. (Red = reduce fire damage to 0, Blue = shift equal to level, Yellow = bonus damage equal to level on next attack)"
       },
-      "KuranzoiPrismscale": {
-        "Name": "Kuran'zoi Prismscale",
-        "Hint": "Enable the Kuran'zoi Prismscale's trigger reminder."
+      "OverlayVisualization": {
+        "Name": "Elevation Overlay",
+        "Hint": "Enable a visual overlay on the canvas to indicate change in elevation of tiles set by this module."
       },
-      "HellchargerHelm": {
-        "Name": "Hellcharger Helm",
-        "Hint": "Enable the Hellcharger Helm's reminder when using Charge."
+      "OverlayStyle": {
+        "Name": "Overlay Mode",
+        "Hint": "Choose which style of visualization to use.",
+        "Choice": {
+          "gradient": "Gradient Overlay",
+          "color": "Colored Tile Overlay"
+        }
       },
-      "EnableElevation": {
-        "Name": "Enable Elevation Module",
-        "Hint": "Enable the elevation marking system for 3D combat"
+      "NumberOverlay": {
+        "Name": "Number Overlay",
+        "Hint": "Enable an additional numerical overlay on the canvas to indicate the elevation of tiles."
+      },
+      "NumberOverlayColor": {
+        "Name": "Add Color to Number Overlay",
+        "Hint": "Enable colorful numbers when the number overlay is enabled. if disabled, numbers will be black."
       }
     }
   }
