@@ -8,6 +8,7 @@ const ELEVATION_OVERLAY_NAME = 'elevation-overlay-container';
  * ______________________________________________
 */ 
 const getElevationColor = (elevation) => {
+  if (elevation === 0) return 0xffffff;
   const elevColorString = game.settings.get(MODULE_NAME, `ElevationColor${elevation}`)
   const colorNum = Number(Color.from(elevColorString))
   return colorNum;

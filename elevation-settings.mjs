@@ -106,7 +106,7 @@ export const registerSettings = () => {
         scope: 'world', 
         config: true,
         type: Number, 
-        default: 0.5, 
+        default: 0.3, 
         range: { min: 0, max: 1, step: 0.05 }, 
         ...reloadOnChange
     });
