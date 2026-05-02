@@ -1,6 +1,7 @@
 const ELEVATION_FLAG_KEY = 'elevation-levels';
 const MODULE_NAME = 'colingreenleafs-personal-module';
 const ELEVATION_OVERLAY_NAME = 'elevation-overlay-container';
+const ELEVATIONS = [1, 2, 3, 4, 5, 6];
 
 /** _____________________________________________
  *
@@ -77,7 +78,7 @@ export const clearAllElevations = async () => {
 /**
  * utility function to allow for simple selection of squares
  */
-export const selectSquares = () => {
+export const selectSquaresSimple = () => {
   return new Promise((resolve) => {
     // Create a transparent overlay to capture clicks and show highlights
     const stage = canvas.app.stage;
@@ -170,57 +171,185 @@ export const selectSquares = () => {
   });
 };
 
+
+export const selectSquares_MultiElevation = () => {
+  return new Promise((resolve) => {
+    const stage = canvas.app.stage;
+    const selectedSquares = []; // now stores { x, y, elevation }
+    const graphics = new PIXI.Graphics();
+    stage.addChild(graphics);
+
+    const overlay = new PIXI.Container();
+    overlay.interactive = true;
+    overlay.eventMode = 'static';
+    overlay.hitArea = new PIXI.Rectangle(0, 0, canvas.dimensions.width, canvas.dimensions.height);
+    stage.addChild(overlay);
+
+    const GRID = canvas.grid.size;
+    
+    let currentElevationIdx = 0;
+    let hoverSquare = null;
+
+    // --- HUD element to show current elevation ---
+    const hud = document.createElement("div");
+    hud.style.cssText = `
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.75);
+      color: white;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 18px;
+      font-family: sans-serif;
+      pointer-events: none;
+      z-index: 9999;
+      border: 2px solid #aaa;
+    `;
+    document.body.appendChild(hud);
+
+    const updateHud = () => {
+      const elev = ELEVATIONS[currentElevationIdx];
+      const hex = "#" + getElevationColor(elev).toString(16).padStart(6, "0");
+      hud.innerHTML = `
+        Drawing elevation <strong>${elev}</strong>
+        <span style="
+          display:inline-block;
+          width:16px; height:16px;
+          background:${hex};
+          border:1px solid #fff;
+          border-radius:3px;
+          vertical-align:middle;
+          margin-left:6px;
+        "></span>
+        &nbsp;<div style="font-size:13px; color:#ccc">[ and ] to change current elevation.</br> Esc to cancel, Enter to confirm</div>
+      `;
+    };
+
+    const drawHighlights = () => {
+      graphics.clear();
+      const currentElevation = ELEVATIONS[currentElevationIdx];
+
+      // Draw selected squares colored by their assigned elevation
+      for (const square of selectedSquares) {
+        const color = getElevationColor(square.elevation);
+        graphics.lineStyle(2, color, 0.9);
+        graphics.beginFill(color, 0.35);
+        graphics.drawRect(square.x * GRID, square.y * GRID, GRID, GRID);
+        graphics.endFill();
+      }
+
+      // Draw hover square with current elevation color
+      if (hoverSquare) {
+        const existing = selectedSquares.find(s => s.x === hoverSquare.x && s.y === hoverSquare.y);
+        const color = existing
+          ? getElevationColor(existing.elevation)
+          : getElevationColor(currentElevation);
+        graphics.lineStyle(2, color, 0.9);
+        graphics.beginFill(color, existing ? 0.15 : 0.55);
+        graphics.drawRect(hoverSquare.x * GRID, hoverSquare.y * GRID, GRID, GRID);
+        graphics.endFill();
+      }
+    };
+
+    const toGrid = (pos) => ({
+      x: Math.floor(pos.x / GRID),
+      y: Math.floor(pos.y / GRID)
+    });
+
+    const onPointerMove = (event) => {
+      hoverSquare = toGrid(event.data.getLocalPosition(stage));
+      drawHighlights();
+    };
+
+    const onPointerDown = (event) => {
+      const square = toGrid(event.data.getLocalPosition(stage));
+      const idx = selectedSquares.findIndex(s => s.x === square.x && s.y === square.y);
+      if (idx >= 0) {
+        // Clicking an already-selected square deselects it
+        selectedSquares.splice(idx, 1);
+      } else {
+        // Store the square with its current elevation at time of click
+        selectedSquares.push({ ...square, elevation: ELEVATIONS[currentElevationIdx] });
+      }
+      drawHighlights();
+    };
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        cleanup();
+        resolve(null);
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        event.stopPropagation();
+        overlay.off('pointermove', onPointerMove);
+        hoverSquare = null;
+        drawHighlights();
+        resolve({ squares: selectedSquares, cleanup });
+      } else if (event.key === '[') {
+        event.preventDefault();
+        event.stopPropagation();
+        currentElevationIdx = (currentElevationIdx - 1 + ELEVATIONS.length) % ELEVATIONS.length;
+        updateHud();
+        drawHighlights();
+      } else if (event.key === ']') {
+        event.preventDefault();
+        event.stopPropagation();
+        currentElevationIdx = (currentElevationIdx + 1) % ELEVATIONS.length;
+        updateHud();
+        drawHighlights();
+      }
+    };
+
+    const cleanup = () => {
+      overlay.off('pointermove', onPointerMove);
+      overlay.off('pointerdown', onPointerDown);
+      stage.removeChild(overlay);
+      stage.removeChild(graphics);
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.removeChild(hud);
+    };
+
+    overlay.on('pointermove', onPointerMove);
+    overlay.on('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+
+    updateHud();
+    drawHighlights();
+  });
+};
+
 /* ___________________________________________________
  *
  * Elevation Builder Tool Function
  * ___________________________________________________
  */
 export const selectForAssignment = async () => {
-  ui.notifications.info('Click on tiles to select them for elevation setting. Press Enter to confirm or Escape to cancel.');
-  const result = await selectSquares();
+  // ui.notifications.info('Click squares to select them. Use square bracker to change elevation. Enter to confirm, Escape to cancel.');
+  const result = await selectSquares_MULTI();
+
   if (!result || !result.squares || result.squares.length === 0) {
     ui.notifications.warn('No squares selected.');
-    if (result && result.cleanup) result.cleanup();
+    if (result?.cleanup) result.cleanup();
     return;
   }
 
   const { squares, cleanup } = result;
 
-  const content = `
-  <div >
-    <div style='display:flex; flex-direction:row; align-items:center; 
-        gap:5px; margin-bottom:5px' >
-    <label>Elevation: </label><br>
-    <select name="elevation" >
-        ${[1,2,3,4,5,6].map(e => `<option value="${e}">${e}</option>`).join('')}
-    </select>
-    </div>
-    </br>
-  </div>
-  `;
-
   try {
-    // Show a dialog to select elevation level
-    const data = await foundry.applications.api.DialogV2.input({
-    window: { title: "Select Elevation" },
-    content: content,
-    ok: {
-        label: "SET",
-    }
-    });
-
-    // Update elevation for selected squares
-    const elevation = parseInt(data.elevation);
+    // Each square already knows its elevation — set them all directly
     for (const square of squares) {
-      await setSquareElevation(square, elevation);
+      await setSquareElevation(square, square.elevation);
     }
-
-    // Re-render elevation labels after a short delay to ensure updates are applied
     renderElevationOverlay();
   } finally {
     cleanup();
   }
 };
+
 
 /* ___________________________________________________
  *
@@ -229,7 +358,7 @@ export const selectForAssignment = async () => {
  */
 export const selectForClearing = async () => {
   ui.notifications.info('Click on tiles to select them for elevation clearing. Press Enter to confirm or Escape to cancel.');
-  const result = await selectSquares();
+  const result = await selectSquaresSimple();
   if (!result || !result.squares || result.squares.length === 0) {
     ui.notifications.warn('No squares selected.');
     if (result && result.cleanup) result.cleanup();

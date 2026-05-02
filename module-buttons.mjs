@@ -10,11 +10,11 @@ export const registerModuleButtons = () => {
     Hooks.on('getSceneControlButtons', (controls) => {
 
 
-        controls["elevationManager"] = {
-        name: "elevationManager",
+        controls["elevationControls"] = {
+        name: "elevationControls",
         order: Object.keys(controls).length + 1,
-        title: "Elevation Manager",
-        layer: "elevationManager",
+        title: "Elevation Controls",
+        layer: "elevationControls",
         icon: "fas fa-mountain",
         visible: true,
 
