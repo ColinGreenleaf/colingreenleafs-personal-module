@@ -152,9 +152,6 @@ const getGradientTexture = () => {
 };
 
 
-
-
-
 /** _____________________________________________
  *
  * VERSATILE SQUARE SELECTION FUNCTION
