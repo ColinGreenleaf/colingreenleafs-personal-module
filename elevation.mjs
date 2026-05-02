@@ -161,8 +161,6 @@ const getGradientTexture = () => {
  * ______________________________________________
 */ 
 export const selectSquares = ({ useElevation = false} = {}) => {
-
-  console.log('useElevation:', useElevation)
   return new Promise((resolve) => {
     const stage = canvas.app.stage;
     const selectedSquares = [];
@@ -179,13 +177,13 @@ export const selectSquares = ({ useElevation = false} = {}) => {
     let currentElevationIdx = 0;
     let currentBrushIdx = 0;
     let hoverSquare = null;
-
     let isPainting = false;
 
+    //functions to manage HUD that displays brush elevation/size and controls for Elevation Builder
     const updateHud = () => {
       if (!hud) return;
       const elev = ELEVATIONS[currentElevationIdx];
-      const brush =BRUSH_SIZES[currentBrushIdx];
+      const brush = BRUSH_SIZES[currentBrushIdx];
       const hex = "#" + getElevationColor(elev).toString(16).padStart(6, "0");
       hud.innerHTML = `
         Elevation: <strong>${elev}</strong>
@@ -225,16 +223,14 @@ export const selectSquares = ({ useElevation = false} = {}) => {
       updateHud();
     }
 
-    const getColor = (elevation) => {
-      return useElevation ? getElevationColor(elevation) : 0xffff00;
-    };
 
+    //method to draw selection markers on selected squares and draw current brush placement/size
     const drawHighlights = () => {
       graphics.clear();
       const currentElevation = ELEVATIONS[currentElevationIdx];
 
       for (const square of selectedSquares) {
-        const color = getColor(square.elevation);
+        const color = (useElevation ? getElevationColor(currentElevation) : 0xffff00);
         graphics.lineStyle(2, color, 0.9);
         graphics.beginFill(color, 0.35);
         graphics.drawRect(square.x * GRID, square.y * GRID, GRID, GRID);
@@ -243,13 +239,12 @@ export const selectSquares = ({ useElevation = false} = {}) => {
 
       if (hoverSquare) {
         const existing = selectedSquares.find(s => s.x === hoverSquare.x && s.y === hoverSquare.y);
-        const color = getColor(currentElevation);
+        const color = (useElevation ? getElevationColor(currentElevation) : 0xffff00);
         graphics.lineStyle(2, color, 0.9);
         graphics.beginFill(color, existing ? 0.15 : 0.55);
-
-        const startPosX = (hoverSquare.x - BRUSH_SIZES[currentBrushIdx] + 1) * GRID
-        const startPosY = (hoverSquare.y - BRUSH_SIZES[currentBrushIdx] + 1) * GRID
-        const scale = (2*BRUSH_SIZES[currentBrushIdx]-1) * GRID
+        const startPosX = (hoverSquare.x - BRUSH_SIZES[currentBrushIdx] + 1) * GRID;
+        const startPosY = (hoverSquare.y - BRUSH_SIZES[currentBrushIdx] + 1) * GRID;
+        const scale = (2 * BRUSH_SIZES[currentBrushIdx] - 1) * GRID;
         graphics.drawRect(startPosX, startPosY, scale, scale);
         graphics.endFill();
       }
@@ -260,124 +255,78 @@ export const selectSquares = ({ useElevation = false} = {}) => {
       y: Math.floor(pos.y / GRID)
     });
 
-    const onPointerMove = (event) => {
-      hoverSquare = toGrid(event.data.getLocalPosition(stage));
-      //if painting, run square selection logic
-      if (isPainting) {
-        // const idx = selectedSquares.findIndex(s => s.x === square.x && s.y === square.y);
-        const b = BRUSH_SIZES[currentBrushIdx];
-        //loop through each square within selection
-        for (var i = hoverSquare.x - b + 1; i <= hoverSquare.x + b - 1; i++){
-          for (var j = hoverSquare.y - b + 1; j <= hoverSquare.y + b - 1; j++){
-            const square = {x: i, y: j};
-            const idx = selectedSquares.findIndex(s => s.x === i && s.y === j)
-            //if the currently hovered square is already selected,
-            if (idx >= 0) {
-              //if hovered square has a different elevation, splice it out and push a new one
-              if (useElevation && selectedSquares[idx].elevation !== ELEVATIONS[currentElevationIdx]) {
-                selectedSquares.splice(idx, 1);
-                selectedSquares.push({
-                ...square,
-                ...(useElevation && { elevation: ELEVATIONS[currentElevationIdx] })
-              });
-              }
-            } else {
-              selectedSquares.push({
-                ...square,
-                ...(useElevation && { elevation: ELEVATIONS[currentElevationIdx] })
-              });
+    //logic to select the squares around the pointer based on brush size
+    const paintBrush = (center) => {
+      const b = BRUSH_SIZES[currentBrushIdx];
+      for (let i = center.x - b + 1; i <= center.x + b - 1; i++) {
+        for (let j = center.y - b + 1; j <= center.y + b - 1; j++) {
+          const square = { x: i, y: j };
+          const idx = selectedSquares.findIndex(s => s.x === i && s.y === j);
+          if (idx >= 0) {
+            if (useElevation && selectedSquares[idx].elevation !== ELEVATIONS[currentElevationIdx]) {
+              selectedSquares.splice(idx, 1);
+              selectedSquares.push({ ...square, ...(useElevation && { elevation: ELEVATIONS[currentElevationIdx] }) });
             }
+          } else {
+            selectedSquares.push({ ...square, ...(useElevation && { elevation: ELEVATIONS[currentElevationIdx] }) });
           }
         }
       }
+    };
+
+    //handlers to act when mouse moves/clicks
+    const onPointerMove = (event) => {
+      hoverSquare = toGrid(event.data.getLocalPosition(stage));
+      if (isPainting) paintBrush(hoverSquare);
       drawHighlights();
     };
 
     const onPointerDown = (event) => {
       isPainting = true;
       hoverSquare = toGrid(event.data.getLocalPosition(stage));
-      // const idx = selectedSquares.findIndex(s => s.x === square.x && s.y === square.y);
-        const b = BRUSH_SIZES[currentBrushIdx];
-        //loop through each square within selection
-        for (var i = hoverSquare.x - b + 1; i <= hoverSquare.x + b - 1; i++){
-          for (var j = hoverSquare.y - b + 1; j <= hoverSquare.y + b - 1; j++){
-            const square = {x: i, y: j};
-            const idx = selectedSquares.findIndex(s => s.x === i && s.y === j)
-            //if the currently hovered square is already selected,
-            if (idx >= 0) {
-              //if hovered square has a different elevation, splice it out and push a new one
-              if (useElevation && selectedSquares[idx].elevation !== ELEVATIONS[currentElevationIdx]) {
-                selectedSquares.splice(idx, 1);
-                selectedSquares.push({
-                ...square,
-                ...(useElevation && { elevation: ELEVATIONS[currentElevationIdx] })
-              });
-              }
-            } else {
-              selectedSquares.push({
-                ...square,
-                ...(useElevation && { elevation: ELEVATIONS[currentElevationIdx] })
-              });
-            }
-          }
-        }
+      paintBrush(hoverSquare);
       drawHighlights();
     };
 
-    const onPointerUp = (event) => {
+    const onPointerUp = () => {
       isPainting = false;
-    }
-
-    const onKeyDown = (event) => {
-      if (useElevation && event.key >= '1' && event.key <= '6') {
-        event.preventDefault();
-        event.stopPropagation();
-        currentElevationIdx = ELEVATIONS.indexOf(parseInt(event.key));
-        updateHud();
-        drawHighlights();
-        return;
-      }
-
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        event.stopPropagation();
-        cleanup();
-        resolve(null);
-      } else if (event.key === 'Enter') {
-        event.preventDefault();
-        event.stopPropagation();
-        overlay.off('pointermove', onPointerMove);
-        hoverSquare = null;
-        drawHighlights();
-        resolve({ squares: selectedSquares, cleanup });
-      } else if (event.key === '[') {
-        event.preventDefault();
-        event.stopPropagation();
-        currentBrushIdx = (currentBrushIdx - 1 + BRUSH_SIZES.length) % BRUSH_SIZES.length;
-        updateHud();
-        drawHighlights();
-      } else if (event.key === ']') {
-        event.preventDefault();
-        event.stopPropagation();
-        currentBrushIdx = (currentBrushIdx + 1) % BRUSH_SIZES.length;
-        updateHud();
-        drawHighlights();
-      }
     };
 
+    //wrapper to prevent default actions when keys are pressed (stops macros when the keys are the numbers 1-6, or any other built in foundry hotkeys)
+    const handleKey = (key, fn) => {
+      key.preventDefault();
+      key.stopPropagation();
+      fn();
+    };
+
+    //handlers to act on key presses, with wrappers to override default actions
+    const onKeyDown = (event) => {
+
+      //terrible type safety but it works
+      if (useElevation && event.key >= '1' && event.key <= '6') {
+        handleKey(event, () => {currentElevationIdx = ELEVATIONS.indexOf(parseInt(event.key)); updateHud(); drawHighlights();}); return;
+      }
+
+      if (event.key === 'Escape')       handleKey(event, () => { cleanup(); resolve(null); });
+      else if (event.key === 'Enter')   handleKey(event, () => { overlay.off('pointermove', onPointerMove); hoverSquare = null; drawHighlights(); resolve({ squares: selectedSquares, cleanup }); });
+      else if (event.key === '[')       handleKey(event, () => { currentBrushIdx = (currentBrushIdx - 1 + BRUSH_SIZES.length) % BRUSH_SIZES.length; updateHud(); drawHighlights(); });
+      else if (event.key === ']')       handleKey(event, () => { currentBrushIdx = (currentBrushIdx + 1) % BRUSH_SIZES.length; updateHud(); drawHighlights(); });
+    };
+
+    //cleanup function to remove any listeners and hud items when done
     const cleanup = () => {
       overlay.off('pointermove', onPointerMove);
       overlay.off('pointerdown', onPointerDown);
-      overlay.off('pointerup', onPointerUp)
+      overlay.off('pointerup', onPointerUp);
       stage.removeChild(overlay);
       stage.removeChild(graphics);
       document.removeEventListener('keydown', onKeyDown);
-      useElevation ? document.body.removeChild(hud): {};
+      if (useElevation) document.body.removeChild(hud);
     };
 
     overlay.on('pointermove', onPointerMove);
     overlay.on('pointerdown', onPointerDown);
-    overlay.on('pointerup', onPointerUp)
+    overlay.on('pointerup', onPointerUp);
     document.addEventListener('keydown', onKeyDown);
 
     drawHighlights();
