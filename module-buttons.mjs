@@ -29,8 +29,8 @@ export const registerModuleButtons = () => {
             },
             'clear-elevation': {
                 name: 'clear-elevation',
-                title: 'Elevation Remover Tool',
-                icon: 'fas fa-arrow-down',
+                title: 'Elevation Eraser Tool',
+                icon: 'fas fa-eraser',
                 button: true,
                 visible: game.user.isGM,
                 onClick: () => {selectForClearing()}

@@ -175,59 +175,59 @@ export const selectSquares = ({ useElevation = false} = {}) => {
     let currentBrushIdx = 0;
     let hoverSquare = null;
     let isPainting = false;
+    let isErasing = false; // tracks current alt state for HUD updates
 
-    //functions to manage HUD that displays brush elevation/size and controls for Elevation Builder
     const updateHud = () => {
       if (!hud) return;
-      const elev = ELEVATIONS[currentElevationIdx];
       const brush = BRUSH_SIZES[currentBrushIdx];
-      const hex = "#" + getElevationColor(elev).toString(16).padStart(6, "0");
-      hud.innerHTML = `
-        Elevation: <strong>${elev}</strong>
-        <span style="
-          display:inline-block;
-          width:16px; height:16px;
-          background:${hex};
-          border:1px solid #fff;
-          border-radius:3px;
-          vertical-align:middle;
-          margin-left:6px;
-        "></span>
-        Brush Size: <strong>${brush}</strong>
-        &nbsp;<div style="font-size:13px; color:#ccc">Click/drag squares to assign them an elevation.</br>num keys 1-6 to change elevation. [] to change brush size.</br> Esc to cancel, Enter to confirm</div>
-      `;
+      hud.innerHTML = useElevation
+        ? `
+        <h1>Elevation Builder</h1> 
+        <h3 style="display: flex; justify-content: space-between;">
+          ${isErasing
+            ? `<p><strong style="color:#ff6666;">Unselect Mode</strong><p>`
+            : `<p>Elevation: <strong style="color: #${getElevationColor(ELEVATIONS[currentElevationIdx]).toString(16).padStart(6, "0")};">${ELEVATIONS[currentElevationIdx]}</strong><p>
+              `
+          }
+          <p>Brush Size: <strong>${brush}</strong><p>
+        </h3>
+        <div style="font-size:13px; color:#ccc">Click/drag squares to assign them an elevation.<br>Num keys 1-6 to change elevation. [] to change brush size.<br>Hold Alt to unselect. Esc to cancel, Enter to confirm</div>
+        `
+        : `
+          <h1>Elevation Eraser</h1>
+          <h3>
+            Brush Size: <strong>${brush}</strong>
+            ${isErasing ? `<strong style="color:#ff6666;">Unselect Mode</strong>` : ''}
+          </h3>
+          <div style="font-size:13px; color:#ccc">Click/drag squares to select them for elevation clearing.<br> Use [ ] to change brush size, hold Alt to unselect.<br> Esc to cancel, Enter to confirm</div>
+        `;
     };
 
-    let hud = null;
-    if (useElevation) {
-      hud = document.createElement("div");
-      hud.style.cssText = `
-        position: fixed;
-        bottom: 80px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0,0,0,0.75);
-        color: white;
-        padding: 8px 18px;
-        border-radius: 8px;
-        font-size: 18px;
-        font-family: sans-serif;
-        pointer-events: none;
-        z-index: 9999;
-        border: 2px solid #aaa;
-      `;
-      document.body.appendChild(hud);
-      updateHud();
-    }
+    let hud = document.createElement("div");
+    hud.style.cssText = `
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.75);
+      color: white;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 18px;
+      font-family: sans-serif;
+      pointer-events: none;
+      z-index: 9999;
+      border: 2px solid #aaa;
+    `;
+    document.body.appendChild(hud);
+    updateHud();
 
-
-    //method to draw selection markers on selected squares and draw current brush placement/size
-    const drawHighlights = () => {
+    const drawHighlights = (altHeld = false) => {
       graphics.clear();
       const currentElevation = ELEVATIONS[currentElevationIdx];
 
       for (const square of selectedSquares) {
-        const color = (useElevation ? getElevationColor(currentElevation) : 0xffff00);
+        const color = (useElevation ? getElevationColor(square.elevation) : 0xffff00);
         graphics.lineStyle(2, color, 0.9);
         graphics.beginFill(color, 0.35);
         graphics.drawRect(square.x * GRID, square.y * GRID, GRID, GRID);
@@ -236,7 +236,8 @@ export const selectSquares = ({ useElevation = false} = {}) => {
 
       if (hoverSquare) {
         const existing = selectedSquares.find(s => s.x === hoverSquare.x && s.y === hoverSquare.y);
-        const color = (useElevation ? getElevationColor(currentElevation) : 0xffff00);
+        // show red brush preview when erasing, otherwise normal color
+        const color = altHeld ? 0xff4444 : (useElevation ? getElevationColor(currentElevation) : 0xffff00);
         graphics.lineStyle(2, color, 0.9);
         graphics.beginFill(color, existing ? 0.15 : 0.55);
         const startPosX = (hoverSquare.x - BRUSH_SIZES[currentBrushIdx] + 1) * GRID;
@@ -252,7 +253,6 @@ export const selectSquares = ({ useElevation = false} = {}) => {
       y: Math.floor(pos.y / GRID)
     });
 
-    //logic to select the squares around the pointer based on brush size
     const paintBrush = (center) => {
       const b = BRUSH_SIZES[currentBrushIdx];
       for (let i = center.x - b + 1; i <= center.x + b - 1; i++) {
@@ -271,46 +271,67 @@ export const selectSquares = ({ useElevation = false} = {}) => {
       }
     };
 
-    //handlers to act when mouse moves/clicks
+    const eraseBrush = (center) => {
+      const b = BRUSH_SIZES[currentBrushIdx];
+      for (let i = center.x - b + 1; i <= center.x + b - 1; i++) {
+        for (let j = center.y - b + 1; j <= center.y + b - 1; j++) {
+          const idx = selectedSquares.findIndex(s => s.x === i && s.y === j);
+          if (idx >= 0) selectedSquares.splice(idx, 1);
+        }
+      }
+    };
+
     const onPointerMove = (event) => {
       hoverSquare = toGrid(event.data.getLocalPosition(stage));
-      if (isPainting) paintBrush(hoverSquare);
-      drawHighlights();
+      // update HUD if alt state has changed
+      if (event.altKey !== isErasing) {
+        isErasing = event.altKey;
+        updateHud();
+      }
+      if (isPainting) {
+        event.altKey ? eraseBrush(hoverSquare) : paintBrush(hoverSquare);
+      }
+      drawHighlights(event.altKey);
     };
 
     const onPointerDown = (event) => {
       isPainting = true;
+      isErasing = event.altKey;
       hoverSquare = toGrid(event.data.getLocalPosition(stage));
-      paintBrush(hoverSquare);
-      drawHighlights();
+      event.altKey ? eraseBrush(hoverSquare) : paintBrush(hoverSquare);
+      drawHighlights(event.altKey);
     };
 
     const onPointerUp = () => {
       isPainting = false;
     };
 
-    //wrapper to prevent default actions when keys are pressed (stops macros when the keys are the numbers 1-6, or any other built in foundry hotkeys)
     const handleKey = (key, fn) => {
       key.preventDefault();
       key.stopPropagation();
       fn();
     };
 
-    //handlers to act on key presses, with wrappers to override default actions
     const onKeyDown = (event) => {
-
-      //terrible type safety but it works
       if (useElevation && event.key >= '1' && event.key <= '6') {
-        handleKey(event, () => {currentElevationIdx = ELEVATIONS.indexOf(parseInt(event.key)); updateHud(); drawHighlights();}); return;
+        handleKey(event, () => {currentElevationIdx = ELEVATIONS.indexOf(parseInt(event.key)); updateHud(); drawHighlights(event.altKey);}); return;
       }
 
       if (event.key === 'Escape')       handleKey(event, () => { cleanup(); resolve(null); });
       else if (event.key === 'Enter')   handleKey(event, () => { overlay.off('pointermove', onPointerMove); hoverSquare = null; drawHighlights(); resolve({ squares: selectedSquares, cleanup }); });
-      else if (event.key === '[')       handleKey(event, () => { currentBrushIdx = (currentBrushIdx - 1 + BRUSH_SIZES.length) % BRUSH_SIZES.length; updateHud(); drawHighlights(); });
-      else if (event.key === ']')       handleKey(event, () => { currentBrushIdx = (currentBrushIdx + 1) % BRUSH_SIZES.length; updateHud(); drawHighlights(); });
+      else if (event.key === '[')       handleKey(event, () => { currentBrushIdx = (currentBrushIdx - 1 + BRUSH_SIZES.length) % BRUSH_SIZES.length; updateHud(); drawHighlights(event.altKey); });
+      else if (event.key === ']')       handleKey(event, () => { currentBrushIdx = (currentBrushIdx + 1) % BRUSH_SIZES.length; updateHud(); drawHighlights(event.altKey); });
     };
 
-    //cleanup function to remove any listeners and hud items when done
+    // update HUD and brush preview when alt is released without moving mouse
+    const onKeyUp = (event) => {
+      if (event.key === 'Alt') {
+        isErasing = false;
+        updateHud();
+        drawHighlights(false);
+      }
+    };
+
     const cleanup = () => {
       overlay.off('pointermove', onPointerMove);
       overlay.off('pointerdown', onPointerDown);
@@ -318,13 +339,15 @@ export const selectSquares = ({ useElevation = false} = {}) => {
       stage.removeChild(overlay);
       stage.removeChild(graphics);
       document.removeEventListener('keydown', onKeyDown);
-      if (useElevation) document.body.removeChild(hud);
+      document.removeEventListener('keyup', onKeyUp);
+      document.body.removeChild(hud);
     };
 
     overlay.on('pointermove', onPointerMove);
     overlay.on('pointerdown', onPointerDown);
     overlay.on('pointerup', onPointerUp);
     document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keyup', onKeyUp);
 
     drawHighlights();
   });
@@ -616,7 +639,7 @@ export const renderNumbers = () => {
 
 // "Elevation Builder Tool"
 export const selectForAssignment = async () => {
-  ui.notifications.info('Click squares to select them. Use square brackets to change brush size, number keys 1-6 to change elevation. Enter to confirm, Escape to cancel.');
+  ui.notifications.info('Click/drag squares to select them. Use square brackets to change brush size, number keys 1-6 to change elevation, Alt to erase. Enter to confirm, Escape to cancel.');
   const result = await selectSquares({ useElevation: true});
 
   if (!result || !result.squares || result.squares.length === 0) {
@@ -640,7 +663,8 @@ export const selectForAssignment = async () => {
 
 // "Elevation Remover Tool"
 export const selectForClearing = async () => {
-  ui.notifications.info('Click on tiles to select them for elevation clearing. Press Enter to confirm or Escape to cancel.');
+    ui.notifications.info('Click squares to select them. Use square brackets to change brush size, Alt to erase. Enter to confirm, Escape to cancel.');
+
   const result = await selectSquares();
   if (!result || !result.squares || result.squares.length === 0) {
     ui.notifications.warn('No squares selected.');
