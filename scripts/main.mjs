@@ -1,6 +1,6 @@
 import {applyMarkWhenWearerDamaged, clearRevengeMarks, clearRevengeOnTurnEnd, applyRevengeStrikeEffects} from "./Trinkets/Echelon 1/RevengersWrap.mjs";
 import {dealSharedDamage} from "./Trinkets/Echelon 1/BloodboundBand.mjs";
-import {selectForAssignment, selectForClearing, renderElevationOverlay, clearAllElevations, getSquareElevation, checkSquareElevation} from "../elevation.mjs";
+import {renderElevationOverlay, getSquareElevation} from "../elevation.mjs";
 import {registerSettings } from "../elevation-settings.mjs";
 import {registerModuleButtons} from "../module-buttons.mjs";;
 

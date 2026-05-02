@@ -23,7 +23,7 @@ export const registerModuleButtons = () => {
                 name: 'elevation',
                 title: 'Elevation Builder Tool',
                 icon: 'fas fa-arrow-up',
-                // button: true,
+                button: true,
                 visible: game.user.isGM,
                 onClick: () => {selectForAssignment()}
             },
@@ -31,7 +31,7 @@ export const registerModuleButtons = () => {
                 name: 'clear-elevation',
                 title: 'Elevation Remover Tool',
                 icon: 'fas fa-arrow-down',
-                // button: true,
+                button: true,
                 visible: game.user.isGM,
                 onClick: () => {selectForClearing()}
             },

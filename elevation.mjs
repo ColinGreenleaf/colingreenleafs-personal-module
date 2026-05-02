@@ -160,6 +160,8 @@ const getGradientTexture = () => {
  * ______________________________________________
 */ 
 export const selectSquares = ({ useElevation = false} = {}) => {
+
+  console.log('useElevation:', useElevation)
   return new Promise((resolve) => {
     const stage = canvas.app.stage;
     const selectedSquares = [];
@@ -175,6 +177,8 @@ export const selectSquares = ({ useElevation = false} = {}) => {
     const GRID = canvas.grid.size;
     let currentElevationIdx = 0;
     let hoverSquare = null;
+
+    let isPainting = false;
 
     const updateHud = () => {
       if (!hud) return;
@@ -250,10 +254,32 @@ export const selectSquares = ({ useElevation = false} = {}) => {
 
     const onPointerMove = (event) => {
       hoverSquare = toGrid(event.data.getLocalPosition(stage));
+      //if painting, run square selection logic
+      if (isPainting) {
+        const square = toGrid(event.data.getLocalPosition(stage));
+        const idx = selectedSquares.findIndex(s => s.x === square.x && s.y === square.y);
+        //if the currently hovered square is already selected,
+        if (idx >= 0) {
+          //if hovered square has a different elevation, splice it out and push a new one
+          if (useElevation && selectedSquares[idx].elevation !== ELEVATIONS[currentElevationIdx]) {
+            selectedSquares.splice(idx, 1);
+            selectedSquares.push({
+            ...square,
+            ...(useElevation && { elevation: ELEVATIONS[currentElevationIdx] })
+          });
+          }
+        } else {
+          selectedSquares.push({
+            ...square,
+            ...(useElevation && { elevation: ELEVATIONS[currentElevationIdx] })
+          });
+        }
+      }
       drawHighlights();
     };
 
     const onPointerDown = (event) => {
+      isPainting = true;
       const square = toGrid(event.data.getLocalPosition(stage));
       const idx = selectedSquares.findIndex(s => s.x === square.x && s.y === square.y);
       if (idx >= 0) {
@@ -266,6 +292,10 @@ export const selectSquares = ({ useElevation = false} = {}) => {
       }
       drawHighlights();
     };
+
+    const onPointerUp = (event) => {
+      isPainting = false;
+    }
 
     const onKeyDown = (event) => {
       if (event.key === 'Escape') {
@@ -298,6 +328,7 @@ export const selectSquares = ({ useElevation = false} = {}) => {
     const cleanup = () => {
       overlay.off('pointermove', onPointerMove);
       overlay.off('pointerdown', onPointerDown);
+      overlay.off('pointerup', onPointerUp)
       stage.removeChild(overlay);
       stage.removeChild(graphics);
       document.removeEventListener('keydown', onKeyDown);
@@ -306,6 +337,7 @@ export const selectSquares = ({ useElevation = false} = {}) => {
 
     overlay.on('pointermove', onPointerMove);
     overlay.on('pointerdown', onPointerDown);
+    overlay.on('pointerup', onPointerUp)
     document.addEventListener('keydown', onKeyDown);
 
     drawHighlights();
@@ -598,7 +630,7 @@ export const renderNumbers = () => {
 
 // "Elevation Builder Tool"
 export const selectForAssignment = async () => {
-  // ui.notifications.info('Click squares to select them. Use square bracker to change elevation. Enter to confirm, Escape to cancel.');
+  ui.notifications.info('Click squares to select them. Use square brackets to change elevation. Enter to confirm, Escape to cancel.');
   const result = await selectSquares({ useElevation: true});
 
   if (!result || !result.squares || result.squares.length === 0) {
