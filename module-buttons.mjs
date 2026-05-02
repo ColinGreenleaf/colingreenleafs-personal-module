@@ -21,23 +21,23 @@ export const registerModuleButtons = () => {
         tools: {
             'elevation': {
                 name: 'elevation',
-                title: 'Elevation Designer',
+                title: 'Elevation Builder Tool',
                 icon: 'fas fa-arrow-up',
-                button: true,
+                // button: true,
                 visible: game.user.isGM,
                 onClick: () => {selectForAssignment()}
             },
             'clear-elevation': {
                 name: 'clear-elevation',
-                title: 'Elevation Remover',
+                title: 'Elevation Remover Tool',
                 icon: 'fas fa-arrow-down',
-                button: true,
+                // button: true,
                 visible: game.user.isGM,
                 onClick: () => {selectForClearing()}
             },
             'clear-all-elevation': {
                 name: 'clear-all-elevation',
-                title: 'Clear All Elevation Markers',
+                title: 'Clear Scene Elevation Markers',
                 icon: 'fas fa-trash-alt',
                 button: true,
                 visible: game.user.isGM,

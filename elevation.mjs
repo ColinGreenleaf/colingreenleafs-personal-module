@@ -3,6 +3,7 @@ const MODULE_NAME = 'colingreenleafs-personal-module';
 const ELEVATION_OVERLAY_NAME = 'elevation-overlay-container';
 const ELEVATIONS = [1, 2, 3, 4, 5, 6];
 
+
 /** _____________________________________________
  *
  * UTILITY FUNCTIONS / GETTERS AND SETTERS
@@ -72,113 +73,99 @@ export const clearAllElevations = async () => {
 };
 
 
+/** _____________________________________________
+ *
+ * GRADIENT DESIGN HELPERS
+ * ______________________________________________
+*/ 
+let _gradientTexture = null;
+let _gradientTextureSize = null;
+let _cornerTexture = null;
+
+// Map of where the shadow should appear RELATIVE to the high square
+const SHADOW_PUSH = [
+    { dx:  0, dy: -1, side: 'bottom' }, // Shadow on North neighbor's bottom edge
+    { dx:  1, dy:  0, side: 'left'   }, // Shadow on East neighbor's left edge
+    { dx:  0, dy:  1, side: 'top'    }, // Shadow on South neighbor's top edge
+    { dx: -1, dy:  0, side: 'right'  }, // Shadow on West neighbor's right edge
+];
+
+const CORNER_PUSH = [
+    { dx: -1, dy: -1, corner: 'br' }, // High is NW, shadow on SE corner of neighbor
+    { dx:  1, dy: -1, corner: 'bl' }, // High is NE, shadow on SW corner of neighbor
+    { dx:  1, dy:  1, corner: 'tl' }, // High is SE, shadow on NW corner of neighbor
+    { dx: -1, dy:  1, corner: 'tr' }  // High is SW, shadow on NE corner of neighbor
+];
+
+const EDGE_ROTATIONS = {
+    top:    { rotation: 0,             anchorX: 0, anchorY: 0 },
+    right:  { rotation: Math.PI / 2,   anchorX: 0, anchorY: 1 },
+    bottom: { rotation: Math.PI,       anchorX: 1, anchorY: 1 },
+    left:   { rotation: -Math.PI / 2,  anchorX: 1, anchorY: 0 },
+};
+
+const CORNER_ROTATIONS = {
+    tl: { rotation: 0,             ax: 0, ay: 0 },
+    tr: { rotation: Math.PI / 2,   ax: 0, ay: 1 },
+    br: { rotation: Math.PI,       ax: 1, ay: 1 },
+    bl: { rotation: -Math.PI / 2,  ax: 1, ay: 0 }
+};
+
+const BASE_GRADIENT_STRENGTH = 0.65;
+const CONTOUR_DARK_ALPHA = 0.6;
+const CONTOUR_LIGHT_ALPHA = 0.3;
+
+const getCornerTexture = () => {
+    const size = canvas.grid.size;
+    if (_cornerTexture && _gradientTextureSize === size) return _cornerTexture;
+    const offscreen = document.createElement('canvas');
+    offscreen.width = size;
+    offscreen.height = size;
+    const ctx = offscreen.getContext('2d');
+    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 0.35);
+    grad.addColorStop(0, 'rgba(0,0,0,1)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+    if (_cornerTexture) _cornerTexture.destroy();
+    _cornerTexture = PIXI.Texture.from(offscreen);
+    return _cornerTexture;
+};
+
+const getGradientTexture = () => {
+    const size = canvas.grid.size;
+    if (_gradientTexture && _gradientTextureSize === size) return _gradientTexture;
+    const offscreen = document.createElement('canvas');
+    offscreen.width = size;
+    offscreen.height = size;
+    const ctx = offscreen.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, size * 0.35);
+    grad.addColorStop(0, 'rgba(0,0,0,1)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+    if (_gradientTexture) _gradientTexture.destroy();
+    _gradientTexture = PIXI.Texture.from(offscreen);
+    _gradientTextureSize = size;
+    return _gradientTexture;
+};
 
 
 
-/**
- * utility function to allow for simple selection of squares
- */
-export const selectSquaresSimple = () => {
+
+
+/** _____________________________________________
+ *
+ * VERSATILE SQUARE SELECTION FUNCTION
+ * ______________________________________________
+*/ 
+export const selectSquares = ({ useElevation = false} = {}) => {
   return new Promise((resolve) => {
-    // Create a transparent overlay to capture clicks and show highlights
     const stage = canvas.app.stage;
     const selectedSquares = [];
     const graphics = new PIXI.Graphics();
     stage.addChild(graphics);
 
-    // Create an interactive overlay to capture pointer events
-    const overlay = new PIXI.Container();
-    overlay.interactive = true;
-    overlay.eventMode = 'static';
-    overlay.hitArea = new PIXI.Rectangle(0, 0, canvas.dimensions.width, canvas.dimensions.height);
-    stage.addChild(overlay);
-
-    // Grid size for calculations
-    const GRID = canvas.grid.size;
-    let hoverSquare = null;
-
-    // Function to draw highlights on selected and hovered squares
-    const drawHighlights = () => {
-      graphics.clear();
-      graphics.lineStyle(2, 0xffff00, 0.8);
-
-     // Draw highlights for selected squares
-      for (const square of selectedSquares) {
-        graphics.beginFill(0xffff00, 0.25);
-        graphics.drawRect(square.x * GRID, square.y * GRID, GRID, GRID);
-        graphics.endFill();
-      }
-      // Draw highlight for hovered square
-      if (hoverSquare) {
-        const alreadySelected = selectedSquares.some(s => s.x === hoverSquare.x && s.y === hoverSquare.y);
-        graphics.beginFill(0xffff00, alreadySelected ? 0.15 : 0.45);
-        graphics.drawRect(hoverSquare.x * GRID, hoverSquare.y * GRID, GRID, GRID);
-        graphics.endFill();
-      }
-    };
-
-    // Convert pixel position to grid coordinates
-    const toGrid = (pos) => ({
-      x: Math.floor(pos.x / GRID),
-      y: Math.floor(pos.y / GRID)
-    });
-
-    // Update hover square on pointer move
-    const onPointerMove = (event) => {
-      hoverSquare = toGrid(event.data.getLocalPosition(stage));
-      drawHighlights();
-    };
-
-    // Toggle square selection on click
-    const onPointerDown = (event) => {
-      const square = toGrid(event.data.getLocalPosition(stage));
-      const idx = selectedSquares.findIndex(s => s.x === square.x && s.y === square.y);
-      if (idx >= 0) selectedSquares.splice(idx, 1);
-      else selectedSquares.push(square);
-      drawHighlights();
-    };
-
-    // Handle keyboard input for confirming or canceling selection
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        event.stopPropagation();
-        cleanup();
-        resolve(null);
-      } else if (event.key === 'Enter') {
-        event.preventDefault();
-        event.stopPropagation();
-        overlay.off('pointermove', onPointerMove);
-        hoverSquare = null;
-        drawHighlights();
-        resolve({ squares: selectedSquares, cleanup });
-      }
-    };
-
-    // Cleanup function to remove event listeners and graphics
-    const cleanup = () => {
-      overlay.off('pointermove', onPointerMove);
-      overlay.off('pointerdown', onPointerDown);
-      stage.removeChild(overlay);
-      stage.removeChild(graphics);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-
-    overlay.on('pointermove', onPointerMove);
-    overlay.on('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    drawHighlights();
-  });
-};
-
-
-export const selectSquares_MultiElevation = () => {
-  return new Promise((resolve) => {
-    const stage = canvas.app.stage;
-    const selectedSquares = []; // now stores { x, y, elevation }
-    const graphics = new PIXI.Graphics();
-    stage.addChild(graphics);
-
     const overlay = new PIXI.Container();
     overlay.interactive = true;
     overlay.eventMode = 'static';
@@ -186,34 +173,15 @@ export const selectSquares_MultiElevation = () => {
     stage.addChild(overlay);
 
     const GRID = canvas.grid.size;
-    
     let currentElevationIdx = 0;
     let hoverSquare = null;
 
-    // --- HUD element to show current elevation ---
-    const hud = document.createElement("div");
-    hud.style.cssText = `
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.75);
-      color: white;
-      padding: 8px 18px;
-      border-radius: 8px;
-      font-size: 18px;
-      font-family: sans-serif;
-      pointer-events: none;
-      z-index: 9999;
-      border: 2px solid #aaa;
-    `;
-    document.body.appendChild(hud);
-
     const updateHud = () => {
+      if (!hud) return;
       const elev = ELEVATIONS[currentElevationIdx];
       const hex = "#" + getElevationColor(elev).toString(16).padStart(6, "0");
       hud.innerHTML = `
-        Drawing elevation <strong>${elev}</strong>
+        Elevation: <strong>${elev}</strong>
         <span style="
           display:inline-block;
           width:16px; height:16px;
@@ -223,29 +191,51 @@ export const selectSquares_MultiElevation = () => {
           vertical-align:middle;
           margin-left:6px;
         "></span>
-        &nbsp;<div style="font-size:13px; color:#ccc">[ and ] to change current elevation.</br> Esc to cancel, Enter to confirm</div>
+        &nbsp;<div style="font-size:13px; color:#ccc">Click squares to assign them an elevation.</br>[ and ] to change elevation.</br> Esc to cancel, Enter to confirm</div>
       `;
+    };
+
+    let hud = null;
+    if (useElevation) {
+      hud = document.createElement("div");
+      hud.style.cssText = `
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.75);
+        color: white;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 18px;
+        font-family: sans-serif;
+        pointer-events: none;
+        z-index: 9999;
+        border: 2px solid #aaa;
+      `;
+      document.body.appendChild(hud);
+      updateHud();
+    }
+
+    const getColor = (elevation) => {
+      return useElevation ? getElevationColor(elevation) : 0xffff00;
     };
 
     const drawHighlights = () => {
       graphics.clear();
       const currentElevation = ELEVATIONS[currentElevationIdx];
 
-      // Draw selected squares colored by their assigned elevation
       for (const square of selectedSquares) {
-        const color = getElevationColor(square.elevation);
+        const color = getColor(square.elevation);
         graphics.lineStyle(2, color, 0.9);
         graphics.beginFill(color, 0.35);
         graphics.drawRect(square.x * GRID, square.y * GRID, GRID, GRID);
         graphics.endFill();
       }
 
-      // Draw hover square with current elevation color
       if (hoverSquare) {
         const existing = selectedSquares.find(s => s.x === hoverSquare.x && s.y === hoverSquare.y);
-        const color = existing
-          ? getElevationColor(existing.elevation)
-          : getElevationColor(currentElevation);
+        const color = getColor(existing?.elevation ?? currentElevation);
         graphics.lineStyle(2, color, 0.9);
         graphics.beginFill(color, existing ? 0.15 : 0.55);
         graphics.drawRect(hoverSquare.x * GRID, hoverSquare.y * GRID, GRID, GRID);
@@ -267,11 +257,12 @@ export const selectSquares_MultiElevation = () => {
       const square = toGrid(event.data.getLocalPosition(stage));
       const idx = selectedSquares.findIndex(s => s.x === square.x && s.y === square.y);
       if (idx >= 0) {
-        // Clicking an already-selected square deselects it
         selectedSquares.splice(idx, 1);
       } else {
-        // Store the square with its current elevation at time of click
-        selectedSquares.push({ ...square, elevation: ELEVATIONS[currentElevationIdx] });
+        selectedSquares.push({
+          ...square,
+          ...(useElevation && { elevation: ELEVATIONS[currentElevationIdx] })
+        });
       }
       drawHighlights();
     };
@@ -310,75 +301,24 @@ export const selectSquares_MultiElevation = () => {
       stage.removeChild(overlay);
       stage.removeChild(graphics);
       document.removeEventListener('keydown', onKeyDown);
-      document.body.removeChild(hud);
+      useElevation ? document.body.removeChild(hud): {};
     };
 
     overlay.on('pointermove', onPointerMove);
     overlay.on('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
 
-    updateHud();
     drawHighlights();
   });
 };
 
-/* ___________________________________________________
- *
- * Elevation Builder Tool Function
- * ___________________________________________________
- */
-export const selectForAssignment = async () => {
-  // ui.notifications.info('Click squares to select them. Use square bracker to change elevation. Enter to confirm, Escape to cancel.');
-  const result = await selectSquares_MULTI();
-
-  if (!result || !result.squares || result.squares.length === 0) {
-    ui.notifications.warn('No squares selected.');
-    if (result?.cleanup) result.cleanup();
-    return;
-  }
-
-  const { squares, cleanup } = result;
-
-  try {
-    // Each square already knows its elevation — set them all directly
-    for (const square of squares) {
-      await setSquareElevation(square, square.elevation);
-    }
-    renderElevationOverlay();
-  } finally {
-    cleanup();
-  }
-};
 
 
 /* ___________________________________________________
  *
- * Elevation Remover Tool Function
+ * OVERLAY RE-RENDER PROCESSING
  * ___________________________________________________
  */
-export const selectForClearing = async () => {
-  ui.notifications.info('Click on tiles to select them for elevation clearing. Press Enter to confirm or Escape to cancel.');
-  const result = await selectSquaresSimple();
-  if (!result || !result.squares || result.squares.length === 0) {
-    ui.notifications.warn('No squares selected.');
-    if (result && result.cleanup) result.cleanup();
-    return;
-  }
-
-  const { squares, cleanup } = result;
-  try {
-    for (const square of squares) {
-      await clearSquareElevation(square);
-    }
-    // Re-render elevation labels after a short delay to ensure updates are applied
-    renderElevationOverlay();
-  } finally {
-    cleanup();
-  }
-};
-
-
-// re-render elevation overlay if the flag changed
 Hooks.on('updateScene', (scene, delta) => {
   // Only react if it's the currently viewed scene
   if (scene.id !== canvas.scene?.id) return;
@@ -398,97 +338,25 @@ Hooks.on('updateScene', (scene, delta) => {
 });
 
 
-let _gradientTexture = null;
-let _gradientTextureSize = null;
-let _cornerTexture = null;
 
-const getCornerTexture = () => {
-    const size = canvas.grid.size;
-    if (_cornerTexture && _gradientTextureSize === size) return _cornerTexture;
-    const offscreen = document.createElement('canvas');
-    offscreen.width = size;
-    offscreen.height = size;
-    const ctx = offscreen.getContext('2d');
-    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 0.35);
-    grad.addColorStop(0, 'rgba(0,0,0,1)');
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, size, size);
-    if (_cornerTexture) _cornerTexture.destroy();
-    _cornerTexture = PIXI.Texture.from(offscreen);
-    return _cornerTexture;
-};
-
-const getGradientTexture = () => {
-    const size = canvas.grid.size;
-    if (_gradientTexture && _gradientTextureSize === size) return _gradientTexture;
-    const offscreen = document.createElement('canvas');
-    offscreen.width = size;
-    offscreen.height = size;
-    const ctx = offscreen.getContext('2d');
-    const grad = ctx.createLinearGradient(0, 0, 0, size * 0.35);
-    grad.addColorStop(0, 'rgba(0,0,0,1)');
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, size, size);
-    if (_gradientTexture) _gradientTexture.destroy();
-    _gradientTexture = PIXI.Texture.from(offscreen);
-    _gradientTextureSize = size;
-    return _gradientTexture;
-};
-
-// Map of where the shadow should appear RELATIVE to the high square
-const SHADOW_PUSH = [
-    { dx:  0, dy: -1, side: 'bottom' }, // Shadow on North neighbor's bottom edge
-    { dx:  1, dy:  0, side: 'left'   }, // Shadow on East neighbor's left edge
-    { dx:  0, dy:  1, side: 'top'    }, // Shadow on South neighbor's top edge
-    { dx: -1, dy:  0, side: 'right'  }, // Shadow on West neighbor's right edge
-];
-
-const CORNER_PUSH = [
-    { dx: -1, dy: -1, corner: 'br' }, // High is NW, shadow on SE corner of neighbor
-    { dx:  1, dy: -1, corner: 'bl' }, // High is NE, shadow on SW corner of neighbor
-    { dx:  1, dy:  1, corner: 'tl' }, // High is SE, shadow on NW corner of neighbor
-    { dx: -1, dy:  1, corner: 'tr' }  // High is SW, shadow on NE corner of neighbor
-];
-
-const EDGE_ROTATIONS = {
-    top:    { rotation: 0,             anchorX: 0, anchorY: 0 },
-    right:  { rotation: Math.PI / 2,   anchorX: 0, anchorY: 1 },
-    bottom: { rotation: Math.PI,       anchorX: 1, anchorY: 1 },
-    left:   { rotation: -Math.PI / 2,  anchorX: 1, anchorY: 0 },
-};
-
-const CORNER_ROTATIONS = {
-    tl: { rotation: 0,             ax: 0, ay: 0 },
-    tr: { rotation: Math.PI / 2,   ax: 0, ay: 1 },
-    br: { rotation: Math.PI,       ax: 1, ay: 1 },
-    bl: { rotation: -Math.PI / 2,  ax: 1, ay: 0 }
-};
-
-const BASE_GRADIENT_STRENGTH = 0.65;
-const CONTOUR_DARK_ALPHA = 0.6;
-const CONTOUR_LIGHT_ALPHA = 0.3;
-
+/* ___________________________________________________
+ *
+ * OVERLAY RENDER MANAGER AND HELPERS
+ * ___________________________________________________
+ */
 export const renderElevationOverlay = () => {
   if (!game.settings.get(MODULE_NAME, "OverlayVisualization")) return; 
 
   const overlayMode = game.settings.get(MODULE_NAME, "OverlayStyle");
+  if (overlayMode === 'gradient') renderGradient();
+  else if (overlayMode === 'color') renderColorTiles();
 
-  if (overlayMode === 'gradient') {
-    renderGradient();
-    console.log('rendering gradient overlay')
-  } else if (overlayMode === 'color') {
-    renderColorTiles();
-    console.log('rendering color tile overlay')
-  }
   const drawNumbers = game.settings.get(MODULE_NAME, "NumberOverlay");
-  if (drawNumbers) {
-    renderNumbers();
-    console.log('rendering numbers')
-  }
+  if (drawNumbers) renderNumbers();
+
 }
 
+//helper to render gradients
 export const renderGradient = () => {
     // FIX: Consistently check and use canvas.primary
     const existing = canvas.primary.getChildByName(ELEVATION_OVERLAY_NAME);
@@ -509,7 +377,7 @@ export const renderGradient = () => {
     const gradTex = getGradientTexture();
     const cornerTex = getCornerTexture();
 
-    // Iterate through squares we KNOW have elevation
+    // Iterate through squares with have elevation
     for (const [key, elev] of Object.entries(map)) {
         const [x, y] = key.split(',').map(Number);
 
@@ -609,6 +477,7 @@ export const renderGradient = () => {
     canvas.primary.addChild(container);
 };
 
+//helper to render colored tiles based on square's elevation
 export const renderColorTiles = () => {
   // FIX: Consistently check and use canvas.primary
     const existing = canvas.primary.getChildByName(ELEVATION_OVERLAY_NAME);
@@ -669,6 +538,7 @@ export const renderColorTiles = () => {
     canvas.primary.addChild(container);
 }
 
+//helper to render numebrs in corner of squares
 export const renderNumbers = () => {
     // Remove existing elevation text from canvas
   const existingText = canvas.stage.getChildByName('elevation-labels-container');
@@ -715,22 +585,72 @@ export const renderNumbers = () => {
     container.addChild(text);
   });
 
-  // Sort children to ensure proper rendering order
   container.sortChildren();
 }
 
+
+/* ___________________________________________________
+ *
+ * SCENE BUTTON METHODS
+ * ___________________________________________________
+ */
+
+
+// "Elevation Builder Tool"
+export const selectForAssignment = async () => {
+  // ui.notifications.info('Click squares to select them. Use square bracker to change elevation. Enter to confirm, Escape to cancel.');
+  const result = await selectSquares({ useElevation: true});
+
+  if (!result || !result.squares || result.squares.length === 0) {
+    ui.notifications.warn('No squares selected.');
+    if (result?.cleanup) result.cleanup();
+    return;
+  }
+
+  const { squares, cleanup } = result;
+
+  try {
+    // Each square already knows its elevation — set them all directly
+    for (const square of squares) {
+      await setSquareElevation(square, square.elevation);
+    }
+    renderElevationOverlay();
+  } finally {
+    cleanup();
+  }
+};
+
+// "Elevation Remover Tool"
+export const selectForClearing = async () => {
+  ui.notifications.info('Click on tiles to select them for elevation clearing. Press Enter to confirm or Escape to cancel.');
+  const result = await selectSquares();
+  if (!result || !result.squares || result.squares.length === 0) {
+    ui.notifications.warn('No squares selected.');
+    if (result && result.cleanup) result.cleanup();
+    return;
+  }
+
+  const { squares, cleanup } = result;
+  try {
+    for (const square of squares) {
+      await clearSquareElevation(square);
+    }
+    // Re-render elevation labels after a short delay to ensure updates are applied
+    renderElevationOverlay();
+  } finally {
+    cleanup();
+  }
+};
+
+// "Clear Scene Elevation Markers"
 export const clearElevationOverlay = () => {
     const existing = canvas.primary.getChildByName(ELEVATION_OVERLAY_NAME);
     if (existing) existing.destroy({ children: true, texture: false });
 };
 
-
+// "Check Elevation"
 export const checkSquareElevation = async () => {
   ui.notifications.info('Hover to check elevations. Press Escape to exit.');
-  await runHoverTool();
-};
-
-const runHoverTool = () => {
   return new Promise((resolve) => {
     const stage = canvas.app.stage;
     const graphics = new PIXI.Graphics();
