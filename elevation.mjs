@@ -243,7 +243,7 @@ export const selectSquares = ({ useElevation = false} = {}) => {
 
       if (hoverSquare) {
         const existing = selectedSquares.find(s => s.x === hoverSquare.x && s.y === hoverSquare.y);
-        const color = getColor(existing?.elevation ?? currentElevation);
+        const color = getColor(currentElevation);
         graphics.lineStyle(2, color, 0.9);
         graphics.beginFill(color, existing ? 0.15 : 0.55);
 
@@ -264,23 +264,30 @@ export const selectSquares = ({ useElevation = false} = {}) => {
       hoverSquare = toGrid(event.data.getLocalPosition(stage));
       //if painting, run square selection logic
       if (isPainting) {
-        const square = toGrid(event.data.getLocalPosition(stage));
-        const idx = selectedSquares.findIndex(s => s.x === square.x && s.y === square.y);
-        //if the currently hovered square is already selected,
-        if (idx >= 0) {
-          //if hovered square has a different elevation, splice it out and push a new one
-          if (useElevation && selectedSquares[idx].elevation !== ELEVATIONS[currentElevationIdx]) {
-            selectedSquares.splice(idx, 1);
-            selectedSquares.push({
-            ...square,
-            ...(useElevation && { elevation: ELEVATIONS[currentElevationIdx] })
-          });
+        // const idx = selectedSquares.findIndex(s => s.x === square.x && s.y === square.y);
+        const b = BRUSH_SIZES[currentBrushIdx];
+        //loop through each square within selection
+        for (var i = hoverSquare.x - b + 1; i <= hoverSquare.x + b - 1; i++){
+          for (var j = hoverSquare.y - b + 1; j <= hoverSquare.y + b - 1; j++){
+            const square = {x: i, y: j};
+            const idx = selectedSquares.findIndex(s => s.x === i && s.y === j)
+            //if the currently hovered square is already selected,
+            if (idx >= 0) {
+              //if hovered square has a different elevation, splice it out and push a new one
+              if (useElevation && selectedSquares[idx].elevation !== ELEVATIONS[currentElevationIdx]) {
+                selectedSquares.splice(idx, 1);
+                selectedSquares.push({
+                ...square,
+                ...(useElevation && { elevation: ELEVATIONS[currentElevationIdx] })
+              });
+              }
+            } else {
+              selectedSquares.push({
+                ...square,
+                ...(useElevation && { elevation: ELEVATIONS[currentElevationIdx] })
+              });
+            }
           }
-        } else {
-          selectedSquares.push({
-            ...square,
-            ...(useElevation && { elevation: ELEVATIONS[currentElevationIdx] })
-          });
         }
       }
       drawHighlights();
@@ -288,16 +295,32 @@ export const selectSquares = ({ useElevation = false} = {}) => {
 
     const onPointerDown = (event) => {
       isPainting = true;
-      const square = toGrid(event.data.getLocalPosition(stage));
-      const idx = selectedSquares.findIndex(s => s.x === square.x && s.y === square.y);
-      if (idx >= 0) {
-        selectedSquares.splice(idx, 1);
-      } else {
-        selectedSquares.push({
-          ...square,
-          ...(useElevation && { elevation: ELEVATIONS[currentElevationIdx] })
-        });
-      }
+      hoverSquare = toGrid(event.data.getLocalPosition(stage));
+      // const idx = selectedSquares.findIndex(s => s.x === square.x && s.y === square.y);
+        const b = BRUSH_SIZES[currentBrushIdx];
+        //loop through each square within selection
+        for (var i = hoverSquare.x - b + 1; i <= hoverSquare.x + b - 1; i++){
+          for (var j = hoverSquare.y - b + 1; j <= hoverSquare.y + b - 1; j++){
+            const square = {x: i, y: j};
+            const idx = selectedSquares.findIndex(s => s.x === i && s.y === j)
+            //if the currently hovered square is already selected,
+            if (idx >= 0) {
+              //if hovered square has a different elevation, splice it out and push a new one
+              if (useElevation && selectedSquares[idx].elevation !== ELEVATIONS[currentElevationIdx]) {
+                selectedSquares.splice(idx, 1);
+                selectedSquares.push({
+                ...square,
+                ...(useElevation && { elevation: ELEVATIONS[currentElevationIdx] })
+              });
+              }
+            } else {
+              selectedSquares.push({
+                ...square,
+                ...(useElevation && { elevation: ELEVATIONS[currentElevationIdx] })
+              });
+            }
+          }
+        }
       drawHighlights();
     };
 
