@@ -2,6 +2,7 @@ const ELEVATION_FLAG_KEY = 'elevation-levels';
 const MODULE_NAME = 'colingreenleafs-personal-module';
 const ELEVATION_OVERLAY_NAME = 'elevation-overlay-container';
 const ELEVATIONS = [1, 2, 3, 4, 5, 6];
+const BRUSH_SIZES = [1, 2, 3]
 
 
 /** _____________________________________________
@@ -176,6 +177,7 @@ export const selectSquares = ({ useElevation = false} = {}) => {
 
     const GRID = canvas.grid.size;
     let currentElevationIdx = 0;
+    let currentBrushIdx = 0;
     let hoverSquare = null;
 
     let isPainting = false;
@@ -183,6 +185,7 @@ export const selectSquares = ({ useElevation = false} = {}) => {
     const updateHud = () => {
       if (!hud) return;
       const elev = ELEVATIONS[currentElevationIdx];
+      const brush =BRUSH_SIZES[currentBrushIdx];
       const hex = "#" + getElevationColor(elev).toString(16).padStart(6, "0");
       hud.innerHTML = `
         Elevation: <strong>${elev}</strong>
@@ -195,7 +198,8 @@ export const selectSquares = ({ useElevation = false} = {}) => {
           vertical-align:middle;
           margin-left:6px;
         "></span>
-        &nbsp;<div style="font-size:13px; color:#ccc">Click squares to assign them an elevation.</br>[ and ] to change elevation.</br> Esc to cancel, Enter to confirm</div>
+        Brush Size: <strong>${brush}</strong>
+        &nbsp;<div style="font-size:13px; color:#ccc">Click/drag squares to assign them an elevation.</br>num keys 1-6 to change elevation. [] to change brush size.</br> Esc to cancel, Enter to confirm</div>
       `;
     };
 
@@ -242,7 +246,11 @@ export const selectSquares = ({ useElevation = false} = {}) => {
         const color = getColor(existing?.elevation ?? currentElevation);
         graphics.lineStyle(2, color, 0.9);
         graphics.beginFill(color, existing ? 0.15 : 0.55);
-        graphics.drawRect(hoverSquare.x * GRID, hoverSquare.y * GRID, GRID, GRID);
+
+        const startPosX = (hoverSquare.x - BRUSH_SIZES[currentBrushIdx] + 1) * GRID
+        const startPosY = (hoverSquare.y - BRUSH_SIZES[currentBrushIdx] + 1) * GRID
+        const scale = (2*BRUSH_SIZES[currentBrushIdx]-1) * GRID
+        graphics.drawRect(startPosX, startPosY, scale, scale);
         graphics.endFill();
       }
     };
@@ -298,6 +306,15 @@ export const selectSquares = ({ useElevation = false} = {}) => {
     }
 
     const onKeyDown = (event) => {
+      if (useElevation && event.key >= '1' && event.key <= '6') {
+        event.preventDefault();
+        event.stopPropagation();
+        currentElevationIdx = ELEVATIONS.indexOf(parseInt(event.key));
+        updateHud();
+        drawHighlights();
+        return;
+      }
+
       if (event.key === 'Escape') {
         event.preventDefault();
         event.stopPropagation();
@@ -313,13 +330,13 @@ export const selectSquares = ({ useElevation = false} = {}) => {
       } else if (event.key === '[') {
         event.preventDefault();
         event.stopPropagation();
-        currentElevationIdx = (currentElevationIdx - 1 + ELEVATIONS.length) % ELEVATIONS.length;
+        currentBrushIdx = (currentBrushIdx - 1 + BRUSH_SIZES.length) % BRUSH_SIZES.length;
         updateHud();
         drawHighlights();
       } else if (event.key === ']') {
         event.preventDefault();
         event.stopPropagation();
-        currentElevationIdx = (currentElevationIdx + 1) % ELEVATIONS.length;
+        currentBrushIdx = (currentBrushIdx + 1) % BRUSH_SIZES.length;
         updateHud();
         drawHighlights();
       }
@@ -630,7 +647,7 @@ export const renderNumbers = () => {
 
 // "Elevation Builder Tool"
 export const selectForAssignment = async () => {
-  ui.notifications.info('Click squares to select them. Use square brackets to change elevation. Enter to confirm, Escape to cancel.');
+  ui.notifications.info('Click squares to select them. Use square brackets to change brush size, number keys 1-6 to change elevation. Enter to confirm, Escape to cancel.');
   const result = await selectSquares({ useElevation: true});
 
   if (!result || !result.squares || result.squares.length === 0) {
