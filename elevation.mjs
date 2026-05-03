@@ -295,10 +295,11 @@ export const selectSquares = ({ useElevation = false} = {}) => {
     };
 
     const onPointerDown = (event) => {
-      isPainting = true;
+      //activate painting only on left click
+      isPainting = (event.button === 0);
       isErasing = event.altKey;
       hoverSquare = toGrid(event.data.getLocalPosition(stage));
-      event.altKey ? eraseBrush(hoverSquare) : paintBrush(hoverSquare);
+      event.altKey ? eraseBrush(hoverSquare) : (event.button === 0 && paintBrush(hoverSquare));
       drawHighlights(event.altKey);
     };
 
