@@ -167,6 +167,26 @@ Hooks.on('combatTurnChange', (combat, prior, current) => {
   if (token) drawMovementRange(token);
 });
 
+Hooks.on('updateToken', (tokenDoc, changes) => {
+  if (changes.x === undefined && changes.y === undefined) return;
+
+  // Only redraw if this is the active combatant's token
+  const combat = game.combat;
+  if (!combat?.combatant) return;
+  if (combat.combatant.tokenId !== tokenDoc.id) return;
+
+  const token = canvas.tokens.get(tokenDoc.id);
+  if (!token) return;
+
+  //wait for animation to finish before redrawing, else the redraw is delayed by 1 movement
+  const animation = token.movementAnimationPromise;
+  if (animation) {
+    animation.then(() => drawMovementRange(token));
+  } else {
+    drawMovementRange(token);
+  }
+});
+
 // Clear when combat ends
 Hooks.on('deleteCombat', () => clearMovementRange());
 
