@@ -158,7 +158,6 @@ Hooks.on('combatTurnChange', (combat, prior, current) => {
 
 // Redraw with remaining movement after each move using Foundry's native tracking
 Hooks.on('moveToken', (tokenDoc, movement) => {
-  console.log(movement);
   const combat = game.combat;
   if (!combat?.combatant) return;
   if (combat.combatant.tokenId !== tokenDoc.id) return;
@@ -183,12 +182,3 @@ Hooks.on('deleteCombat', () => clearMovementRange());
 
 // Clear when leaving the scene
 Hooks.on('canvasTearDown', () => clearMovementRange());
-
-
-
-  // const animation = token.movementAnimationPromise;
-  // if (animation) {
-  //   animation.then(() => drawMovementRange(token, multiplier));
-  // } else {
-  //   drawMovementRange(token, multiplier);
-  // }
