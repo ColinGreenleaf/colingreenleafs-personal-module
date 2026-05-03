@@ -379,6 +379,34 @@ Hooks.on('updateScene', (scene, delta) => {
 });
 
 
+/* ___________________________________________________
+ *
+ * TOKEN MOVEMENT ONTO ELEVATED TILE HANDLING
+ * ___________________________________________________
+ */
+Hooks.on('updateToken', async (token, changes, options, userId) => {
+  // Check if the token's position changed
+  if (changes.x !== undefined || changes.y !== undefined) {
+    const gridSize = canvas.grid.size;
+    const gridX = Math.floor((changes.x ?? token.x) / gridSize);
+    const gridY = Math.floor((changes.y ?? token.y) / gridSize);
+    const squareElevation = getSquareElevation({ x: gridX, y: gridY });
+    
+    if (squareElevation > 0 && token.elevation !== squareElevation) {
+      await token.update({ elevation: squareElevation });
+    } else if (squareElevation === 0 && token.elevation !== 0) {
+      await token.update({ elevation: 0 });
+    }
+
+    //if the elevation is 2 or more squares higher than the token's current elevation, show a warning notification
+    if (squareElevation > token.elevation + 1.9) {
+      ui.notifications.warn(`${token.name} is moving onto a square with elevation ${squareElevation}, which is more than 1 higher than their current elevation of ${token.elevation}.`);
+    }
+  }
+});
+
+
+
 
 /* ___________________________________________________
  *
