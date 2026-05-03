@@ -812,3 +812,47 @@ export const checkSquareElevation = async () => {
     document.addEventListener('keydown', onKeyDown);
   });
 };
+
+
+/* ___________________________________________________
+ *
+ * ADD EDGE WHEN STANDING ABOVE TARGET
+ * ___________________________________________________
+ */
+Hooks.once('ready', () => {
+
+  //hijack the Draw Steel systems' getTargetModifiers and add an additional case to inject an edge when the user is fully above the target
+  const AbilitySystem = CONFIG.Item.dataModels?.ability;
+  if (!AbilitySystem) {
+    console.warn(`${MODULE_NAME} | Could not find Draw Steel ability data model — elevation edge hook skipped.`);
+    return;
+  }
+
+  // Store the original method
+  const _original = AbilitySystem.prototype.getTargetModifiers;
+
+  //override the method with new condition
+  AbilitySystem.prototype.getTargetModifiers = function(target) {
+    // Get the base modifiers from the system
+    const modifiers = _original.call(this, target);
+
+    // Find the controlled token belonging to this item's actor
+    const userToken = canvas.tokens.controlled.find(t => t.actor === this.actor)
+      ?? canvas.tokens.placeables.find(t => t.actor === this.actor);
+
+    if (userToken && target) {
+      const userElevation   = userToken.document.elevation ?? 0;
+      const targetElevation = target.document?.elevation ?? target.elevation ?? 0;
+      const targetSize = target.actor?.system?.combat?.size?.value ?? 1;
+
+      // Edge condition: target's topmost point is still below the user's feet
+      if ((targetElevation + targetSize) <= userElevation) {
+        modifiers.edges += 1;
+      }
+    }
+
+    return modifiers;
+  };
+
+  console.log(`${MODULE_NAME} | Elevation edge hook registered on Draw Steel ability system.`);
+});
