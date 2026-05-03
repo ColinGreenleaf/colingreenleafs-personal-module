@@ -1,8 +1,9 @@
 // import {applyMarkWhenWearerDamaged, clearRevengeMarks, clearRevengeOnTurnEnd, applyRevengeStrikeEffects} from "./Trinkets/Echelon 1/RevengersWrap.mjs";
 // import {dealSharedDamage} from "./Trinkets/Echelon 1/BloodboundBand.mjs";
-import {renderElevationOverlay, getSquareElevation} from "../elevation.mjs";
+import {renderElevationOverlay} from "../elevation.mjs";
 import {registerSettings } from "../elevation-settings.mjs";
-import {registerModuleButtons} from "../module-buttons.mjs";;
+import {registerModuleButtons} from "../module-buttons.mjs";
+import '../movement.mjs'
 
 // const MODULE_ID = 'colingreenleafs-personal-module'
 // const REVENGERS_WRAP_NAME = 'Revenger’s Wrap';
@@ -19,8 +20,8 @@ import {registerModuleButtons} from "../module-buttons.mjs";;
 Hooks.once("init", () => {
   registerSettings();
   registerModuleButtons();
-});
 
+});
 
 Hooks.on('canvasReady', () => {
   renderElevationOverlay();
