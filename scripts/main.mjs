@@ -1,6 +1,7 @@
 // import {applyMarkWhenWearerDamaged, clearRevengeMarks, clearRevengeOnTurnEnd, applyRevengeStrikeEffects} from "./Trinkets/Echelon 1/RevengersWrap.mjs";
 // import {dealSharedDamage} from "./Trinkets/Echelon 1/BloodboundBand.mjs";
 import {renderElevationOverlay} from "../elevation.mjs";
+import {renderTerrainOverlay} from "../terrain.mjs";
 import {registerSettings } from "../elevation-settings.mjs";
 import {registerModuleButtons} from "../module-buttons.mjs";
 import '../movement.mjs'
@@ -25,6 +26,7 @@ Hooks.once("init", () => {
 
 Hooks.on('canvasReady', () => {
   renderElevationOverlay();
+  renderTerrainOverlay();
 });
 
 

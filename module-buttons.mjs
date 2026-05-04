@@ -1,4 +1,5 @@
 import {selectForAssignment, selectForClearing, clearAllElevations, checkSquareElevation} from "./elevation.mjs";
+import {paintDifficultTerrain, clearAllTerrain} from "./terrain.mjs";
 
 
 export const registerModuleButtons = () => {
@@ -50,6 +51,22 @@ export const registerModuleButtons = () => {
                 button: true,
                 visible: game.user.isGM,
                 onClick: () => {checkSquareElevation()}
+            },
+            'terrain': {
+                name: 'terrain',
+                title: 'Difficult Terrain Designer',
+                icon: 'fas fa-hill-avalanche',
+                button: true,
+                visible: game.user.isGM,
+                onClick: () => {paintDifficultTerrain()}
+            },
+            'clear-all-terrain': {
+                name: 'clear-all-terrain',
+                title: 'Clear Scene Terrain Markers',
+                icon: 'fas fa-trash-alt',
+                button: true,
+                visible: game.user.isGM,
+                onClick: () => {clearAllTerrain()}
             },
         }
     }
