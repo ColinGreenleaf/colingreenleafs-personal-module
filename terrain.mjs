@@ -226,7 +226,7 @@ export const clearAllTerrain = async () => {
 };
 
 export const paintDifficultTerrain = async () => {
-  ui.notifications.info('Click/drag to paint terrain. [ ] for brush size, 2-4 for cost. Enter to confirm.');
+  ui.notifications.info('Click/drag to paint difficult terrain.');
   
   // Call the selection tool
   const result = await selectTerrainSquares();
@@ -246,7 +246,6 @@ export const paintDifficultTerrain = async () => {
       await setSquareTerrain(square, square.multiplier);
     }
     renderTerrainOverlay(); // Refresh the visual overlay
-    ui.notifications.info(`Applied terrain costs to ${squares.length} squares.`);
   } finally {
     cleanup(); // Always remove the HUD and listeners
   }
@@ -254,7 +253,7 @@ export const paintDifficultTerrain = async () => {
 
 
 export const eraseDifficultTerrain = async () => {
-  ui.notifications.info('Click/drag to select terrain for erasing terrain. [ ] for brush size, 2-4 for cost. Enter to confirm.');
+  ui.notifications.info('Click/drag to select for clearing difficult terrain.');
   
   // Call the selection tool
   const result = await selectTerrainSquares();
@@ -274,7 +273,6 @@ export const eraseDifficultTerrain = async () => {
       await setSquareTerrain(square, 1);
     }
     renderTerrainOverlay(); // Refresh the visual overlay
-    ui.notifications.info(`Applied terrain costs to ${squares.length} squares.`);
   } finally {
     cleanup(); // Always remove the HUD and listeners
   }

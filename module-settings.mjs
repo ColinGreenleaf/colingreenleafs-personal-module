@@ -3,6 +3,7 @@ const MODULE_ID = 'colingreenleafs-personal-module';
 
 
 export const registerSettings = () => {
+    console.log('registering settings')
 //   const MODULE_ID = 'colingreenleafs-personal-module';
   const reloadOnChange = { onChange: () => SettingsConfig.reloadConfirm({ world: true }) };
 
@@ -45,6 +46,24 @@ export const registerSettings = () => {
         type: Boolean,
         default: false,
         ...reloadOnChange        
+    });
+
+    game.settings.register(MODULE_ID, "ElevationColor-2", {
+        name: "Elevation -2 Color",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "#00b118",
+        ...reloadOnChange
+    });
+
+    game.settings.register(MODULE_ID, "ElevationColor-1", {
+        name: "Elevation -1 Color",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "#7bff00",
+        ...reloadOnChange
     });
 
     game.settings.register(MODULE_ID, "ElevationColor1", {

@@ -1,7 +1,7 @@
 const ELEVATION_FLAG_KEY = 'elevation-levels';
 const MODULE_NAME = 'colingreenleafs-personal-module';
 const ELEVATION_OVERLAY_NAME = 'elevation-overlay-container';
-const ELEVATIONS = [1, 2, 3, 4, 5, 6];
+const ELEVATIONS = [-2, -1, 1, 2, 3, 4, 5, 6];
 const BRUSH_SIZES = [1, 2, 3]
 
 
@@ -171,7 +171,7 @@ export const selectSquares = ({ useElevation = false} = {}) => {
     stage.addChild(overlay);
 
     const GRID = canvas.grid.size;
-    let currentElevationIdx = 0;
+    let currentElevationIdx = 2;
     let currentBrushIdx = 0;
     let hoverSquare = null;
     let isPainting = false;
@@ -191,7 +191,7 @@ export const selectSquares = ({ useElevation = false} = {}) => {
           }
           <p>Brush Size: <strong>${brush}</strong><p>
         </h3>
-        <div style="font-size:13px; color:#ccc">Click/drag squares to assign them an elevation.<br>Num keys 1-6 to change elevation. [] to change brush size.<br>Hold Alt to unselect. Esc to cancel, Enter to confirm</div>
+        <div style="font-size:13px; color:#ccc">Click/drag squares to assign them an elevation.<br>Num keys 1-6 or Tab to change elevation. [] to change brush size.<br>Hold Alt to unselect. Esc to cancel, Enter to confirm</div>
         `
         : `
           <h1>Elevation Eraser</h1>
@@ -322,6 +322,7 @@ export const selectSquares = ({ useElevation = false} = {}) => {
       else if (event.key === 'Enter')   handleKey(event, () => { overlay.off('pointermove', onPointerMove); hoverSquare = null; drawHighlights(); resolve({ squares: selectedSquares, cleanup }); });
       else if (event.key === '[')       handleKey(event, () => { currentBrushIdx = (currentBrushIdx - 1 + BRUSH_SIZES.length) % BRUSH_SIZES.length; updateHud(); drawHighlights(event.altKey); });
       else if (event.key === ']')       handleKey(event, () => { currentBrushIdx = (currentBrushIdx + 1) % BRUSH_SIZES.length; updateHud(); drawHighlights(event.altKey); });
+      else if (event.key === 'Tab')     handleKey(event, () => { currentElevationIdx = (currentElevationIdx + 1) % ELEVATIONS.length; updateHud(); drawHighlights(event.altKey); });
     };
 
     // update HUD and brush preview when alt is released without moving mouse
@@ -385,23 +386,23 @@ Hooks.on('updateScene', (scene, delta) => {
  * TOKEN MOVEMENT ONTO ELEVATED TILE HANDLING
  * ___________________________________________________
  */
-Hooks.on('updateToken', async (token, changes, options, userId) => {
+Hooks.on('updateToken', async (tokenDoc, changes, options, userId) => {
   // Check if the token's position changed
   if (changes.x !== undefined || changes.y !== undefined) {
     const gridSize = canvas.grid.size;
-    const gridX = Math.floor((changes.x ?? token.x) / gridSize);
-    const gridY = Math.floor((changes.y ?? token.y) / gridSize);
+    const gridX = Math.floor((changes.x ?? tokenDoc.x) / gridSize);
+    const gridY = Math.floor((changes.y ?? tokenDoc.y) / gridSize);
     const squareElevation = getSquareElevation({ x: gridX, y: gridY });
     
-    if (squareElevation > 0 && token.elevation !== squareElevation) {
-      await token.update({ elevation: squareElevation });
-    } else if (squareElevation === 0 && token.elevation !== 0) {
-      await token.update({ elevation: 0 });
-    }
+    if (squareElevation !== 0 && tokenDoc.elevation !== squareElevation) {
+      await tokenDoc.update({ elevation: squareElevation });
+    } else if (squareElevation === 0 && tokenDoc.elevation !== 0) {
+      await tokenDoc.update({ elevation: 0 });
+    } 
 
     //if the elevation is 2 or more squares higher than the token's current elevation, show a warning notification
-    if (squareElevation > token.elevation + 1.9) {
-      ui.notifications.warn(`${token.name} is moving onto a square with elevation ${squareElevation}, which is more than 1 higher than their current elevation of ${token.elevation}.`);
+    if (squareElevation > tokenDoc.elevation + 1.9) {
+      ui.notifications.warn(`${tokenDoc.name} is moving onto a square with elevation ${squareElevation}, which is more than 1 higher than their current elevation of ${tokenDoc.elevation}.`);
     }
   }
 });
@@ -543,6 +544,77 @@ export const renderGradient = () => {
             graphics.moveTo(lx1, ly1).lineTo(lx2, ly2);
         }
     }
+
+    // 4. NEGATIVE ELEVATION — draw inward shadows on pits/depressions
+const OPPOSITE_SIDE   = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' };
+const OPPOSITE_CORNER = { tl: 'br', tr: 'bl', bl: 'tr', br: 'tl' };
+
+for (const [key, elev] of Object.entries(map)) {
+    if (elev >= 0) continue; // Only process negative-elevation squares
+    const [x, y] = key.split(',').map(Number);
+
+    // 4a. ORTHOGONAL inward shadows
+    for (const { dx, dy, side } of SHADOW_PUSH) {
+        const neighborElev = map[`${x+dx},${y+dy}`] ?? 0;
+        if (neighborElev <= elev) continue; // Neighbor must be higher than this pit
+
+        const delta = neighborElev - elev;
+        const alpha = BASE_GRADIENT_STRENGTH * Math.min(1, 0.3 + delta * 0.2);
+
+        // Use the OPPOSITE side's rotation so the gradient faces inward
+        const oppSide = OPPOSITE_SIDE[side];
+        const { rotation, anchorX, anchorY } = EDGE_ROTATIONS[oppSide];
+
+        const sprite = new PIXI.Sprite(gradTex);
+        sprite.width = sprite.height = GRID;
+        sprite.alpha = alpha;
+        sprite.rotation = rotation;
+        sprite.anchor.set(anchorX, anchorY);
+
+        // Position on *this* square, not the neighbor — same offset logic as section 1
+        const px = x * GRID;
+        const py = y * GRID;
+        const bOff = (oppSide === 'bottom') ? -GRID : 0;
+        const lOff = (oppSide === 'left')   ? -GRID : 0;
+        const rOff = (oppSide === 'right')  ? -GRID : 0;
+
+        sprite.x = px + (anchorX * GRID) + bOff + lOff;
+        sprite.y = py + (anchorY * GRID) + rOff + bOff;
+        gradientContainer.addChild(sprite);
+    }
+
+    // 4b. CORNER inward shadows
+    for (const { dx, dy, corner } of CORNER_PUSH) {
+        const neighborElev = map[`${x+dx},${y+dy}`] ?? 0;
+        if (neighborElev <= elev) continue;
+
+        // Skip if either adjacent orthogonal neighbor is already higher (orthogonal shadow covers it)
+        const adj1 = map[`${x+dx},${y}`] ?? 0;
+        const adj2 = map[`${x},${y+dy}`] ?? 0;
+        if (adj1 > elev || adj2 > elev) continue;
+
+        const delta = neighborElev - elev;
+        const alpha = BASE_GRADIENT_STRENGTH * Math.min(1, 0.2 + delta * 0.15);
+
+        const oppCorner = OPPOSITE_CORNER[corner];
+        const { rotation, ax, ay } = CORNER_ROTATIONS[oppCorner];
+
+        const sprite = new PIXI.Sprite(cornerTex);
+        sprite.width = sprite.height = GRID;
+        sprite.alpha = alpha;
+        sprite.rotation = rotation;
+        sprite.anchor.set(ax, ay);
+
+        const px = x * GRID;
+        const py = y * GRID;
+        const xOff = (oppCorner === 'br' || oppCorner === 'bl') ? -GRID : 0;
+        const yOff = (oppCorner === 'tr' || oppCorner === 'br') ? -GRID : 0;
+
+        sprite.x = px + (ax * GRID) + xOff;
+        sprite.y = py + (ay * GRID) + yOff;
+        gradientContainer.addChild(sprite);
+    }
+}
 
     canvas.primary.addChild(container);
 };

@@ -4,7 +4,7 @@ import {renderElevationOverlay} from "../elevation.mjs";
 import {renderTerrainOverlay} from "../terrain.mjs";
 import {registerSettings } from "../module-settings.mjs";
 import {registerModuleButtons} from "../module-buttons.mjs";
-import '../movement.mjs'
+// import '../movement.mjs'  //this needs to be fixed later, the math is hard
 
 // const MODULE_ID = 'colingreenleafs-personal-module'
 // const REVENGERS_WRAP_NAME = 'Revenger’s Wrap';
