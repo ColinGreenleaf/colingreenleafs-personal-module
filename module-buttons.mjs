@@ -1,5 +1,5 @@
 import {selectForAssignment, selectForClearing, clearAllElevations, checkSquareElevation} from "./elevation.mjs";
-import {paintDifficultTerrain, clearAllTerrain} from "./terrain.mjs";
+import {paintDifficultTerrain, eraseDifficultTerrain, clearAllTerrain} from "./terrain.mjs";
 
 
 export const registerModuleButtons = () => {
@@ -59,6 +59,14 @@ export const registerModuleButtons = () => {
                 button: true,
                 visible: game.user.isGM,
                 onClick: () => {paintDifficultTerrain()}
+            },
+            'clear-terrain': {
+                name: 'clear-terrain',
+                title: 'Terrain Eraser Tool',
+                icon: 'fas fa-eraser',
+                button: true,
+                visible: game.user.isGM,
+                onClick: () => {eraseDifficultTerrain()}
             },
             'clear-all-terrain': {
                 name: 'clear-all-terrain',

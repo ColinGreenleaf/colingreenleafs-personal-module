@@ -21,8 +21,8 @@ export const registerSettings = () => {
         hint: `${MODULE_ID}.Settings.OverlayStyle.Hint`,
         scope: "world", config: true, type: String,
         choices: {
-        'gradient':          `${MODULE_ID}.Settings.OverlayStyle.Choice.gradient`,
-        'color':  `${MODULE_ID}.Settings.OverlayStyle.Choice.color`,
+        'gradient': `${MODULE_ID}.Settings.OverlayStyle.Choice.gradient`,
+        'color': `${MODULE_ID}.Settings.OverlayStyle.Choice.color`,
         },
         default: 'gradient',
         ...reloadOnChange

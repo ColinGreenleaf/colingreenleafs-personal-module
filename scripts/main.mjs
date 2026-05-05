@@ -2,7 +2,7 @@
 // import {dealSharedDamage} from "./Trinkets/Echelon 1/BloodboundBand.mjs";
 import {renderElevationOverlay} from "../elevation.mjs";
 import {renderTerrainOverlay} from "../terrain.mjs";
-import {registerSettings } from "../elevation-settings.mjs";
+import {registerSettings } from "../module-settings.mjs";
 import {registerModuleButtons} from "../module-buttons.mjs";
 import '../movement.mjs'
 

@@ -51,7 +51,7 @@ export const setSquareTerrain = async (square, multiplier) => {
  * TERRAIN SELECTION FUNCTION
  * ______________________________________________
 */ 
-export const selectTerrainSquares = () => {
+export const selectTerrainSquares = ({erasing = false} = {}) => {
   return new Promise((resolve) => {
     const stage = canvas.app.stage;
     const selectedSquares = [];
@@ -76,15 +76,15 @@ export const selectTerrainSquares = () => {
       const brush = BRUSH_SIZES[currentBrushIdx];
       const mult = 2;
       hud.innerHTML = `
-        <h1>Terrain Painter</h1> 
+        <h1>Terrain ${erasing ? 'Eraser' : 'Painter'}</h1> 
         <h3 style="display: flex; justify-content: space-between;">
           ${isErasing
-            ? `<p><strong style="color:#ff6666;">Eraser Mode</strong><p>`
+            ? `<p><strong style="color:#ff6666;">Unselect Mode</strong><p>`
             : ``
           }
           <p>Brush Size: <strong>${brush}</strong><p>
         </h3>
-        <div style="font-size:13px; color:#ccc">Paint difficult terrain costs.<br> [ ] for brush size.<br>Alt to erase. Esc to cancel, Enter to confirm.</div>
+        <div style="font-size:13px; color:#ccc">Select Squares. [ ] for brush size.<br>Alt to unselect. Esc to cancel, Enter to confirm.</div>
       `;
     };
 
@@ -146,13 +146,17 @@ export const selectTerrainSquares = () => {
       drawHighlights(e.altKey);
     };
 
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') cleanup();
-      if (e.key === 'Enter') { resolve({ squares: selectedSquares, cleanup }); }
-      if (e.key === '[' || e.key === ']') { 
-        currentBrushIdx = e.key === '[' ? (currentBrushIdx + 2) % 3 : (currentBrushIdx + 1) % 3; 
-        updateHud(); drawHighlights(); 
-      }
+    const handleKey = (key, fn) => {
+      key.preventDefault();
+      key.stopPropagation();
+      fn();
+    };
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') handleKey(event, () => { cleanup(); resolve(null); });
+      if (event.key === 'Enter') handleKey(event, () => { overlay.off('pointermove', onPointerMove); hoverSquare = null; drawHighlights(); resolve({ squares: selectedSquares, cleanup }); });
+      if (event.key === '[')       handleKey(event, () => { currentBrushIdx = (currentBrushIdx - 1 + BRUSH_SIZES.length) % BRUSH_SIZES.length; updateHud(); drawHighlights(event.altKey); });
+      if (event.key === ']')       handleKey(event, () => { currentBrushIdx = (currentBrushIdx + 1) % BRUSH_SIZES.length; updateHud(); drawHighlights(event.altKey); });
     };
 
     const cleanup = () => {
@@ -187,15 +191,21 @@ export const renderTerrainOverlay = () => {
   const GRID = canvas.grid.size;
   for (const [key, mult] of Object.entries(map)) {
     const [x, y] = key.split(',').map(Number);
-    const color = 0xffff00;
+    const color = 0x000000;
     
     // Draw a pattern (slashes) to distinguish from solid elevation colors
-    graphics.lineStyle(2, color, 0.8);
-    graphics.moveTo(x * GRID, y * GRID).lineTo((x + 1) * GRID, (y + 1) * GRID);
-    graphics.moveTo((x + 1) * GRID, y * GRID).lineTo(x * GRID, (y + 1) * GRID);
+    graphics.lineStyle(4, color, 0.5);
+    // graphics.moveTo(x * GRID, y * GRID).lineTo((x + 1) * GRID, (y + 1) * GRID);
+    // graphics.moveTo((x + 0.5) * GRID, y * GRID).lineTo(x * GRID, (y + 0.5) * GRID);
+    // graphics.moveTo((x + 1) * GRID, y * GRID).lineTo(x * GRID, (y + 1) * GRID);
+    // graphics.moveTo((x + 0.5) * GRID, (y + 0.5) * GRID).lineTo((x + 0.5) * GRID, (y + 0.5) * GRID);
+
+    graphics.moveTo((x) * GRID, (y+ 0.5) * GRID).lineTo((x+0.5) * GRID, (y) * GRID);
+    graphics.moveTo((x) * GRID, (y+ 1) * GRID).lineTo((x+1) * GRID, (y) * GRID);
+    graphics.moveTo((x+0.5) * GRID, (y+ 1) * GRID).lineTo((x+1) * GRID, (y+0.5) * GRID);
     
     // Fill with light tint
-    graphics.beginFill(color, 0.2).drawRect(x * GRID, y * GRID, GRID, GRID).endFill();
+    // graphics.beginFill(color, 0.2).drawRect(x * GRID, y * GRID, GRID, GRID).endFill();
   }
 
   canvas.primary.addChild(container);
@@ -234,6 +244,34 @@ export const paintDifficultTerrain = async () => {
     // This is where the data actually gets saved to the scene!
     for (const square of squares) {
       await setSquareTerrain(square, square.multiplier);
+    }
+    renderTerrainOverlay(); // Refresh the visual overlay
+    ui.notifications.info(`Applied terrain costs to ${squares.length} squares.`);
+  } finally {
+    cleanup(); // Always remove the HUD and listeners
+  }
+};
+
+
+export const eraseDifficultTerrain = async () => {
+  ui.notifications.info('Click/drag to select terrain for erasing terrain. [ ] for brush size, 2-4 for cost. Enter to confirm.');
+  
+  // Call the selection tool
+  const result = await selectTerrainSquares();
+
+  // If the user hit Escape or closed the tool, result will be null
+  if (!result || !result.squares || result.squares.length === 0) {
+    ui.notifications.warn('No squares selected.');
+    if (result?.cleanup) result.cleanup();
+    return;
+  }
+
+  const { squares, cleanup } = result;
+
+  try {
+    // This is where the data actually gets saved to the scene!
+    for (const square of squares) {
+      await setSquareTerrain(square, 1);
     }
     renderTerrainOverlay(); // Refresh the visual overlay
     ui.notifications.info(`Applied terrain costs to ${squares.length} squares.`);
