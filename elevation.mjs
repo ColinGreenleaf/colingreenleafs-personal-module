@@ -5,11 +5,9 @@ const ELEVATIONS = [-2, -1, 1, 2, 3, 4, 5, 6];
 const BRUSH_SIZES = [1, 2, 3]
 
 
-/** _____________________________________________
- *
- * UTILITY FUNCTIONS / GETTERS AND SETTERS
- * ______________________________________________
-*/ 
+/* -------------------------------------------------- */
+/*   Utility Functions / Getters and Setters         */
+/* -------------------------------------------------- */
 const getElevationColor = (elevation) => {
   if (elevation === 0) return 0xffffff;
   const elevColorString = game.settings.get(MODULE_NAME, `ElevationColor${elevation}`)
@@ -74,11 +72,9 @@ export const clearAllElevations = async () => {
 };
 
 
-/** _____________________________________________
- *
- * GRADIENT DESIGN HELPERS
- * ______________________________________________
-*/ 
+/* -------------------------------------------------- */
+/*   Gradient Design Helpers                          */
+/* -------------------------------------------------- */
 let _gradientTexture = null;
 let _gradientTextureSize = null;
 let _cornerTexture = null;
@@ -152,11 +148,9 @@ const getGradientTexture = () => {
 };
 
 
-/** _____________________________________________
- *
- * VERSATILE SQUARE SELECTION FUNCTION
- * ______________________________________________
-*/ 
+/* -------------------------------------------------- */
+/*   Modal Sqaure Selection Function                  */
+/* -------------------------------------------------- */
 export const selectSquares = ({ useElevation = false} = {}) => {
   return new Promise((resolve) => {
     const stage = canvas.app.stage;
@@ -175,7 +169,7 @@ export const selectSquares = ({ useElevation = false} = {}) => {
     let currentBrushIdx = 0;
     let hoverSquare = null;
     let isPainting = false;
-    let isErasing = false; // tracks current alt state for HUD updates
+    let isErasing = false;
 
     const updateHud = () => {
       if (!hud) return;
@@ -357,35 +351,12 @@ export const selectSquares = ({ useElevation = false} = {}) => {
 
 
 
-/* ___________________________________________________
- *
- * OVERLAY RE-RENDER PROCESSING
- * ___________________________________________________
- */
-Hooks.on('updateScene', (scene, delta) => {
-  // Only react if it's the currently viewed scene
-  if (scene.id !== canvas.scene?.id) return;
-  
-  // Only react if our elevation flag was part of the update
-  const elevationChanged = foundry.utils.hasProperty(
-    delta, 
-    `flags.${MODULE_NAME}.${ELEVATION_FLAG_KEY}`
-  ) || foundry.utils.hasProperty(
-    delta,
-    `flags.${MODULE_NAME}.-=${ELEVATION_FLAG_KEY}`
-  );
-
-  if (!elevationChanged) return;
-
-  renderElevationOverlay();
-});
 
 
-/* ___________________________________________________
- *
- * TOKEN MOVEMENT ONTO ELEVATED TILE HANDLING
- * ___________________________________________________
- */
+
+/* -------------------------------------------------- */
+/*   Handler for Token Movement onto Elevated Tiles   */
+/* -------------------------------------------------- */
 Hooks.on('updateToken', async (tokenDoc, changes, options, userId) => {
   // Check if the token's position changed
   if (changes.x !== undefined || changes.y !== undefined) {
@@ -410,11 +381,9 @@ Hooks.on('updateToken', async (tokenDoc, changes, options, userId) => {
 
 
 
-/* ___________________________________________________
- *
- * OVERLAY RENDER MANAGER AND HELPERS
- * ___________________________________________________
- */
+/* -------------------------------------------------- */
+/*   Overlay Render Manager and Helpers               */
+/* -------------------------------------------------- */
 export const renderElevationOverlay = () => {
   if (!game.settings.get(MODULE_NAME, "OverlayVisualization")) return; 
 
@@ -448,113 +417,87 @@ export const renderGradient = () => {
     const gradTex = getGradientTexture();
     const cornerTex = getCornerTexture();
 
-    // Iterate through squares with have elevation
+    // POSITIVE ELEVATION
     for (const [key, elev] of Object.entries(map)) {
-        const [x, y] = key.split(',').map(Number);
+      if (elev <= 0) continue;
+      const [x, y] = key.split(',').map(Number);
 
         // 1. PROJECT ORTHOGONAL SHADOWS
-        for (const { dx, dy, side } of SHADOW_PUSH) {
-            const nx = x + dx;
-            const ny = y + dy;
-            const neighborElev = map[`${nx},${ny}`] ?? 0;
+      for (const { dx, dy, side } of SHADOW_PUSH) {
+        const nx = x + dx;
+        const ny = y + dy;
+        const neighborElev = map[`${nx},${ny}`] ?? 0;
 
-            if (neighborElev < elev) {
-                const delta = elev - neighborElev;
-                const alpha = BASE_GRADIENT_STRENGTH * Math.min(1, 0.3 + delta * 0.2);
-                const { rotation, anchorX, anchorY } = EDGE_ROTATIONS[side];
+        if (neighborElev < elev) {
+          const delta = elev - neighborElev;
+          const alpha = BASE_GRADIENT_STRENGTH * Math.min(1, 0.3 + delta * 0.2);
+          const { rotation, anchorX, anchorY } = EDGE_ROTATIONS[side];
 
-                const sprite = new PIXI.Sprite(gradTex);
-                sprite.width = sprite.height = GRID;
-                sprite.alpha = alpha;
-                sprite.rotation = rotation;
-                sprite.anchor.set(anchorX, anchorY);
+          const sprite = new PIXI.Sprite(gradTex);
+          sprite.width = sprite.height = GRID;
+          sprite.alpha = alpha;
+          sprite.rotation = rotation;
+          sprite.anchor.set(anchorX, anchorY);
 
-                // Position on the neighbor
-                const npx = nx * GRID;
-                const npy = ny * GRID;
-                
-                const bOff = (side === 'bottom') ? -GRID : 0;
-                const lOff = (side === 'left') ? -GRID : 0;
-                const rOff = (side === 'right') ? -GRID : 0;
+          // Position on the neighbor
+          const npx = nx * GRID;
+          const npy = ny * GRID;
+          
+          const bOff = (side === 'bottom') ? -GRID : 0;
+          const lOff = (side === 'left') ? -GRID : 0;
+          const rOff = (side === 'right') ? -GRID : 0;
 
-                sprite.x = npx + (anchorX * GRID) + bOff + lOff;
-                sprite.y = npy + (anchorY * GRID) + rOff + bOff;
-                gradientContainer.addChild(sprite);
-            }
+          sprite.x = npx + (anchorX * GRID) + bOff + lOff;
+          sprite.y = npy + (anchorY * GRID) + rOff + bOff;
+          gradientContainer.addChild(sprite);
         }
+      }
 
-        // 2. PROJECT CORNER SHADOWS
-        for (const { dx, dy, corner } of CORNER_PUSH) {
-            const nx = x + dx;
-            const ny = y + dy;
-            const neighborElev = map[`${nx},${ny}`] ?? 0;
+      // 2. PROJECT CORNER SHADOWS
+      for (const { dx, dy, corner } of CORNER_PUSH) {
+        const nx = x + dx;
+        const ny = y + dy;
+        const neighborElev = map[`${nx},${ny}`] ?? 0;
 
-            if (neighborElev < elev) {
-                // Skip corner shadow if orthogonal shadows are already covering it
-                const adj1 = map[`${x + dx},${y}`] ?? 0;
-                const adj2 = map[`${x},${y + dy}`] ?? 0;
-                if (adj1 >= elev || adj2 >= elev) continue;
+        if (neighborElev < elev) {
+          // Skip corner shadow if orthogonal shadows are already covering it
+          const adj1 = map[`${x + dx},${y}`] ?? 0;
+          const adj2 = map[`${x},${y + dy}`] ?? 0;
+          if (adj1 >= elev || adj2 >= elev) continue;
 
-                const delta = elev - neighborElev;
-                const alpha = BASE_GRADIENT_STRENGTH * Math.min(1, 0.2 + delta * 0.15);
-                const { rotation, ax, ay } = CORNER_ROTATIONS[corner];
+          const delta = elev - neighborElev;
+          const alpha = BASE_GRADIENT_STRENGTH * Math.min(1, 0.2 + delta * 0.15);
+          const { rotation, ax, ay } = CORNER_ROTATIONS[corner];
 
-                const sprite = new PIXI.Sprite(cornerTex);
-                sprite.width = sprite.height = GRID;
-                sprite.alpha = alpha;
-                sprite.rotation = rotation;
-                sprite.anchor.set(ax, ay);
+          const sprite = new PIXI.Sprite(cornerTex);
+          sprite.width = sprite.height = GRID;
+          sprite.alpha = alpha;
+          sprite.rotation = rotation;
+          sprite.anchor.set(ax, ay);
 
-                const npx = nx * GRID;
-                const npy = ny * GRID;
-                const xOff = (corner === 'br' || corner === 'bl') ? -GRID : 0;
-                const yOff = (corner === 'tr' || corner === 'br') ? -GRID : 0;
+          const npx = nx * GRID;
+          const npy = ny * GRID;
+          const xOff = (corner === 'br' || corner === 'bl') ? -GRID : 0;
+          const yOff = (corner === 'tr' || corner === 'br') ? -GRID : 0;
 
-                sprite.x = npx + (ax * GRID) + xOff;
-                sprite.y = npy + (ay * GRID) + yOff;
-                gradientContainer.addChild(sprite);
-            }
+          sprite.x = npx + (ax * GRID) + xOff;
+          sprite.y = npy + (ay * GRID) + yOff;
+          gradientContainer.addChild(sprite);
         }
+      }
     }
 
-    // 3. CONTOUR LINES 
-    const drawnEdges = new Set();
+
+    // NEGATIVE ELEVATION
+    const OPPOSITE_SIDE   = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' };
+    const OPPOSITE_CORNER = { tl: 'br', tr: 'bl', bl: 'tr', br: 'tl' };
+
     for (const [key, elev] of Object.entries(map)) {
-        const [x, y] = key.split(',').map(Number);
-        
-        for (const { dx, dy } of [{dx:0, dy:-1}, {dx:1, dy:0}, {dx:0, dy:1}, {dx:-1, dy:0}]) {
-            const neighborElev = map[`${x+dx},${y+dy}`] ?? 0;
-            if (neighborElev === elev) continue;
+      if (elev >= 0) continue; 
+      const [x, y] = key.split(',').map(Number);
 
-            // Generate unique edge key to avoid double-drawing
-            const side = dx === 1 ? 'r' : dx === -1 ? 'l' : dy === 1 ? 'b' : 't';
-            const edgeKey = side === 'r' ? `v:${x+1},${y}` : side === 'l' ? `v:${x},${y}` : side === 'b' ? `h:${x},${y+1}` : `h:${x},${y}`;
-            if (drawnEdges.has(edgeKey)) continue;
-            drawnEdges.add(edgeKey);
-
-            const isV = side === 'r' || side === 'l';
-            const lx1 = isV ? (x + (side === 'r' ? 1 : 0)) * GRID : x * GRID;
-            const ly1 = isV ? y * GRID : (y + (side === 'b' ? 1 : 0)) * GRID;
-            const lx2 = isV ? lx1 : (x + 1) * GRID;
-            const ly2 = isV ? (y + 1) * GRID : ly1;
-
-            graphics.lineStyle(2, 0xffffff, CONTOUR_LIGHT_ALPHA);
-            graphics.moveTo(lx1, ly1).lineTo(lx2, ly2);
-            graphics.lineStyle(2, 0x000000, CONTOUR_DARK_ALPHA);
-            graphics.moveTo(lx1, ly1).lineTo(lx2, ly2);
-        }
-    }
-
-    // 4. NEGATIVE ELEVATION — draw inward shadows on pits/depressions
-const OPPOSITE_SIDE   = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' };
-const OPPOSITE_CORNER = { tl: 'br', tr: 'bl', bl: 'tr', br: 'tl' };
-
-for (const [key, elev] of Object.entries(map)) {
-    if (elev >= 0) continue; // Only process negative-elevation squares
-    const [x, y] = key.split(',').map(Number);
-
-    // 4a. ORTHOGONAL inward shadows
-    for (const { dx, dy, side } of SHADOW_PUSH) {
+      //ORTHOGONAL inward shadows
+      for (const { dx, dy, side } of SHADOW_PUSH) {
         const neighborElev = map[`${x+dx},${y+dy}`] ?? 0;
         if (neighborElev <= elev) continue; // Neighbor must be higher than this pit
 
@@ -581,10 +524,10 @@ for (const [key, elev] of Object.entries(map)) {
         sprite.x = px + (anchorX * GRID) + bOff + lOff;
         sprite.y = py + (anchorY * GRID) + rOff + bOff;
         gradientContainer.addChild(sprite);
-    }
+      }
 
-    // 4b. CORNER inward shadows
-    for (const { dx, dy, corner } of CORNER_PUSH) {
+      // 4b. CORNER inward shadows
+      for (const { dx, dy, corner } of CORNER_PUSH) {
         const neighborElev = map[`${x+dx},${y+dy}`] ?? 0;
         if (neighborElev <= elev) continue;
 
@@ -613,15 +556,41 @@ for (const [key, elev] of Object.entries(map)) {
         sprite.x = px + (ax * GRID) + xOff;
         sprite.y = py + (ay * GRID) + yOff;
         gradientContainer.addChild(sprite);
+      }
     }
-}
+
+    // 3. CONTOUR LINES 
+    const drawnEdges = new Set();
+    for (const [key, elev] of Object.entries(map)) {
+      const [x, y] = key.split(',').map(Number);
+      
+      for (const { dx, dy } of [{dx:0, dy:-1}, {dx:1, dy:0}, {dx:0, dy:1}, {dx:-1, dy:0}]) {
+        const neighborElev = map[`${x+dx},${y+dy}`] ?? 0;
+        if (neighborElev === elev) continue;
+
+        const side = dx === 1 ? 'r' : dx === -1 ? 'l' : dy === 1 ? 'b' : 't';
+        const edgeKey = side === 'r' ? `v:${x+1},${y}` : side === 'l' ? `v:${x},${y}` : side === 'b' ? `h:${x},${y+1}` : `h:${x},${y}`;
+        if (drawnEdges.has(edgeKey)) continue;
+        drawnEdges.add(edgeKey);
+
+        const isV = side === 'r' || side === 'l';
+        const lx1 = isV ? (x + (side === 'r' ? 1 : 0)) * GRID : x * GRID;
+        const ly1 = isV ? y * GRID : (y + (side === 'b' ? 1 : 0)) * GRID;
+        const lx2 = isV ? lx1 : (x + 1) * GRID;
+        const ly2 = isV ? (y + 1) * GRID : ly1;
+
+        graphics.lineStyle(2, 0xffffff, CONTOUR_LIGHT_ALPHA);
+        graphics.moveTo(lx1, ly1).lineTo(lx2, ly2);
+        graphics.lineStyle(2, 0x000000, CONTOUR_DARK_ALPHA);
+        graphics.moveTo(lx1, ly1).lineTo(lx2, ly2);
+      }
+    }
 
     canvas.primary.addChild(container);
 };
 
 //helper to render colored tiles based on square's elevation
 export const renderColorTiles = () => {
-  // FIX: Consistently check and use canvas.primary
     const existing = canvas.primary.getChildByName(ELEVATION_OVERLAY_NAME);
     if (existing) existing.destroy({ children: true, texture: false });
 
@@ -645,55 +614,22 @@ export const renderColorTiles = () => {
         graphics.beginFill(color, game.settings.get(MODULE_NAME, `ColorTileOpacity`));
         graphics.drawRect(square.x * GRID, square.y * GRID, GRID, GRID);
         graphics.endFill();
-      
-
     };
-
-    // CONTOUR LINES (Drawn between any mismatch)
-    // const drawnEdges = new Set();
-    // for (const [key, elev] of Object.entries(map)) {
-    //     const [x, y] = key.split(',').map(Number);
-        
-    //     for (const { dx, dy } of [{dx:0, dy:-1}, {dx:1, dy:0}, {dx:0, dy:1}, {dx:-1, dy:0}]) {
-    //         const neighborElev = map[`${x+dx},${y+dy}`] ?? 0;
-    //         if (neighborElev === elev) continue;
-
-    //         // Generate unique edge key to avoid double-drawing
-    //         const side = dx === 1 ? 'r' : dx === -1 ? 'l' : dy === 1 ? 'b' : 't';
-    //         const edgeKey = side === 'r' ? `v:${x+1},${y}` : side === 'l' ? `v:${x},${y}` : side === 'b' ? `h:${x},${y+1}` : `h:${x},${y}`;
-    //         if (drawnEdges.has(edgeKey)) continue;
-    //         drawnEdges.add(edgeKey);
-
-    //         const isV = side === 'r' || side === 'l';
-    //         const lx1 = isV ? (x + (side === 'r' ? 1 : 0)) * GRID : x * GRID;
-    //         const ly1 = isV ? y * GRID : (y + (side === 'b' ? 1 : 0)) * GRID;
-    //         const lx2 = isV ? lx1 : (x + 1) * GRID;
-    //         const ly2 = isV ? (y + 1) * GRID : ly1;
-
-    //         graphics.lineStyle(2, 0xffffff, CONTOUR_LIGHT_ALPHA);
-    //         graphics.moveTo(lx1, ly1).lineTo(lx2, ly2);
-    //         graphics.lineStyle(2, 0x000000, CONTOUR_DARK_ALPHA);
-    //         graphics.moveTo(lx1, ly1).lineTo(lx2, ly2);
-    //     }
-    // }
 
     canvas.primary.addChild(container);
 }
 
-//helper to render numebrs in corner of squares
+//helper to render numbers in corner of squares
 export const renderNumbers = () => {
-    // Remove existing elevation text from canvas
   const existingText = canvas.stage.getChildByName('elevation-labels-container');
   if (existingText) canvas.stage.removeChild(existingText);
 
-  // Create a new container for elevation labels
   const container = new PIXI.Container();
   container.name = 'elevation-labels-container';
   canvas.stage.addChild(container);
 
   const squares = getSquaresWithElevation();
   
-  // Create text labels for each square with elevation
   squares.forEach(square => {
     const elevation = square.elevation;
     if (elevation === 0) return;
@@ -708,16 +644,6 @@ export const renderNumbers = () => {
       align: 'center'
     });
 
-    // const text = new PIXI.Text('*'.repeat(elevation), {
-    //   fontFamily: 'Arial',
-    //   fontSize: Math.round(canvas.grid.size * 0.15),
-    //   fontWeight: 'normal',
-    //   fill: getElevationColor(elevation),
-    //   stroke: 0x000000,
-    //   strokeThickness: 2,
-    //   align: 'center'
-    // });
-
     text.anchor.set(0, 0);
     text.x = square.x * canvas.grid.size;
     text.y = square.y * canvas.grid.size;
@@ -730,17 +656,34 @@ export const renderNumbers = () => {
   container.sortChildren();
 }
 
+//overlay re-render processing
+Hooks.on('updateScene', (scene, delta) => {
+  // Only react if it's the currently viewed scene
+  if (scene.id !== canvas.scene?.id) return;
+  
+  // Only react if our elevation flag was part of the update
+  const elevationChanged = foundry.utils.hasProperty(
+    delta, 
+    `flags.${MODULE_NAME}.${ELEVATION_FLAG_KEY}`
+  ) || foundry.utils.hasProperty(
+    delta,
+    `flags.${MODULE_NAME}.-=${ELEVATION_FLAG_KEY}`
+  );
 
-/* ___________________________________________________
- *
- * SCENE BUTTON METHODS
- * ___________________________________________________
- */
+  if (!elevationChanged) return;
+
+  renderElevationOverlay();
+});
+
+
+/* -------------------------------------------------- */
+/*   Scene Button Methods                             */
+/* -------------------------------------------------- */
 
 
 // "Elevation Builder Tool"
 export const selectForAssignment = async () => {
-  ui.notifications.info('Click/drag squares to select them. Use square brackets to change brush size, number keys 1-6 to change elevation, Alt to erase. Enter to confirm, Escape to cancel.');
+  ui.notifications.info('Click/drag squares to paint elevation.');
   const result = await selectSquares({ useElevation: true});
 
   if (!result || !result.squares || result.squares.length === 0) {
@@ -764,7 +707,7 @@ export const selectForAssignment = async () => {
 
 // "Elevation Remover Tool"
 export const selectForClearing = async () => {
-    ui.notifications.info('Click squares to select them. Use square brackets to change brush size, Alt to erase. Enter to confirm, Escape to cancel.');
+    ui.notifications.info('Click squares to select them.');
 
   const result = await selectSquares();
   if (!result || !result.squares || result.squares.length === 0) {
@@ -886,11 +829,9 @@ export const checkSquareElevation = async () => {
 };
 
 
-/* ___________________________________________________
- *
- * ADD EDGE WHEN STANDING ABOVE TARGET
- * ___________________________________________________
- */
+/* -------------------------------------------------- */
+/* ADD EDGE WHEN STANDING ABOVE TARGET                */
+/* -------------------------------------------------- */
 Hooks.once('ready', () => {
 
   //hijack the Draw Steel systems' getTargetModifiers and add an additional case to inject an edge when the user is fully above the target

@@ -5,11 +5,9 @@ const MODULE_NAME = 'colingreenleafs-personal-module';
 const TERRAIN_OVERLAY_NAME = 'terrain-overlay-container';
 const BRUSH_SIZES = [1, 2, 3];
 
-/** _____________________________________________
- *
- * UTILITY FUNCTIONS / GETTERS AND SETTERS
- * ______________________________________________
-*/ 
+/* -------------------------------------------------- */
+/*   Utility Functions / Getters and Setters          */
+/* -------------------------------------------------- */
 const getTerrainMap = () => {
   return canvas.scene.getFlag(MODULE_NAME, TERRAIN_FLAG_KEY) ?? {};
 };
@@ -46,11 +44,9 @@ export const setSquareTerrain = async (square, multiplier) => {
   await setTerrainMap(map);
 };
 
-/** _____________________________________________
- *
- * TERRAIN SELECTION FUNCTION
- * ______________________________________________
-*/ 
+/* -------------------------------------------------- */
+/*   Sqaure Selection Function                        */
+/* -------------------------------------------------- */
 export const selectTerrainSquares = ({erasing = false} = {}) => {
   return new Promise((resolve) => {
     const stage = canvas.app.stage;
@@ -65,7 +61,6 @@ export const selectTerrainSquares = ({erasing = false} = {}) => {
     stage.addChild(overlay);
 
     const GRID = canvas.grid.size;
-    let currentMultIdx = 0;
     let currentBrushIdx = 0;
     let hoverSquare = null;
     let isPainting = false;
@@ -171,11 +166,9 @@ export const selectTerrainSquares = ({erasing = false} = {}) => {
   });
 };
 
-/** _____________________________________________
- *
- * RENDERER
- * ______________________________________________
-*/ 
+/* -------------------------------------------------- */
+/*   Overlay Render Manager and Helpers               */
+/* -------------------------------------------------- */
 export const renderTerrainOverlay = () => {
   const existing = canvas.primary.getChildByName(TERRAIN_OVERLAY_NAME);
   if (existing) existing.destroy({ children: true });
@@ -195,17 +188,9 @@ export const renderTerrainOverlay = () => {
     
     // Draw a pattern (slashes) to distinguish from solid elevation colors
     graphics.lineStyle(4, color, 0.5);
-    // graphics.moveTo(x * GRID, y * GRID).lineTo((x + 1) * GRID, (y + 1) * GRID);
-    // graphics.moveTo((x + 0.5) * GRID, y * GRID).lineTo(x * GRID, (y + 0.5) * GRID);
-    // graphics.moveTo((x + 1) * GRID, y * GRID).lineTo(x * GRID, (y + 1) * GRID);
-    // graphics.moveTo((x + 0.5) * GRID, (y + 0.5) * GRID).lineTo((x + 0.5) * GRID, (y + 0.5) * GRID);
-
     graphics.moveTo((x) * GRID, (y+ 0.5) * GRID).lineTo((x+0.5) * GRID, (y) * GRID);
     graphics.moveTo((x) * GRID, (y+ 1) * GRID).lineTo((x+1) * GRID, (y) * GRID);
     graphics.moveTo((x+0.5) * GRID, (y+ 1) * GRID).lineTo((x+1) * GRID, (y+0.5) * GRID);
-    
-    // Fill with light tint
-    // graphics.beginFill(color, 0.2).drawRect(x * GRID, y * GRID, GRID, GRID).endFill();
   }
 
   canvas.primary.addChild(container);
@@ -218,6 +203,59 @@ Hooks.on('updateScene', (scene, delta) => {
 });
 
 
+/* -------------------------------------------------- */
+/*   Scene Button Methods                             */
+/* -------------------------------------------------- */
+
+// "Difficult Terrain Designer"
+export const paintDifficultTerrain = async () => {
+  ui.notifications.info('Click/drag to paint difficult terrain.');
+  
+  const result = await selectTerrainSquares();
+
+  if (!result || !result.squares || result.squares.length === 0) {
+    ui.notifications.warn('No squares selected.');
+    if (result?.cleanup) result.cleanup();
+    return;
+  }
+
+  const { squares, cleanup } = result;
+
+  try {
+    for (const square of squares) {
+      await setSquareTerrain(square, square.multiplier);
+    }
+    renderTerrainOverlay(); 
+  } finally {
+    cleanup();
+  }
+};
+
+// "Terrain Eraser Tool"
+export const eraseDifficultTerrain = async () => {
+  ui.notifications.info('Click/drag to select for clearing difficult terrain.');
+  
+  const result = await selectTerrainSquares();
+
+  if (!result || !result.squares || result.squares.length === 0) {
+    ui.notifications.warn('No squares selected.');
+    if (result?.cleanup) result.cleanup();
+    return;
+  }
+
+  const { squares, cleanup } = result;
+
+  try {
+    for (const square of squares) {
+      await setSquareTerrain(square, 1);
+    }
+    renderTerrainOverlay(); 
+  } finally {
+    cleanup();
+  }
+};
+
+// "Clear Scene Terrain Markers"
 export const clearAllTerrain = async () => {
   if (!canvas.scene) return;
   await canvas.scene.unsetFlag(MODULE_NAME, TERRAIN_FLAG_KEY);
@@ -225,55 +263,6 @@ export const clearAllTerrain = async () => {
   ui.notifications.info('All terrain markers have been cleared.');
 };
 
-export const paintDifficultTerrain = async () => {
-  ui.notifications.info('Click/drag to paint difficult terrain.');
-  
-  // Call the selection tool
-  const result = await selectTerrainSquares();
-
-  // If the user hit Escape or closed the tool, result will be null
-  if (!result || !result.squares || result.squares.length === 0) {
-    ui.notifications.warn('No squares selected.');
-    if (result?.cleanup) result.cleanup();
-    return;
-  }
-
-  const { squares, cleanup } = result;
-
-  try {
-    // This is where the data actually gets saved to the scene!
-    for (const square of squares) {
-      await setSquareTerrain(square, square.multiplier);
-    }
-    renderTerrainOverlay(); // Refresh the visual overlay
-  } finally {
-    cleanup(); // Always remove the HUD and listeners
-  }
-};
 
 
-export const eraseDifficultTerrain = async () => {
-  ui.notifications.info('Click/drag to select for clearing difficult terrain.');
-  
-  // Call the selection tool
-  const result = await selectTerrainSquares();
 
-  // If the user hit Escape or closed the tool, result will be null
-  if (!result || !result.squares || result.squares.length === 0) {
-    ui.notifications.warn('No squares selected.');
-    if (result?.cleanup) result.cleanup();
-    return;
-  }
-
-  const { squares, cleanup } = result;
-
-  try {
-    // This is where the data actually gets saved to the scene!
-    for (const square of squares) {
-      await setSquareTerrain(square, 1);
-    }
-    renderTerrainOverlay(); // Refresh the visual overlay
-  } finally {
-    cleanup(); // Always remove the HUD and listeners
-  }
-};

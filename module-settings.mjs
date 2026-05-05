@@ -1,10 +1,20 @@
 
 const MODULE_ID = 'colingreenleafs-personal-module';
+const elevations = ["-2", "-1", "1", "2", "3", "4", "5", "6"]
+const defaultElevationColors = { 
+        "-2": '#00b118', 
+        "-1": '#7bff00', 
+        "1": '#ffff00', 
+        "2": '#ff8800', 
+        "3": '#ff0000', 
+        "4": '#ff00ff', 
+        "5": '#00ffff', 
+        "6": '#00ff00'
+    }
 
 
 export const registerSettings = () => {
     console.log('registering settings')
-//   const MODULE_ID = 'colingreenleafs-personal-module';
   const reloadOnChange = { onChange: () => SettingsConfig.reloadConfirm({ world: true }) };
 
     game.settings.register(MODULE_ID, "OverlayVisualization", {
@@ -48,77 +58,16 @@ export const registerSettings = () => {
         ...reloadOnChange        
     });
 
-    game.settings.register(MODULE_ID, "ElevationColor-2", {
-        name: "Elevation -2 Color",
+    for (const elevation of elevations) {
+        game.settings.register(MODULE_ID, `ElevationColor${elevation}`, {
+        name: `Elevation ${elevation} Color`,
         scope: "world",
         config: true,
         type: String,
-        default: "#00b118",
+        default: defaultElevationColors[elevation],
         ...reloadOnChange
     });
-
-    game.settings.register(MODULE_ID, "ElevationColor-1", {
-        name: "Elevation -1 Color",
-        scope: "world",
-        config: true,
-        type: String,
-        default: "#7bff00",
-        ...reloadOnChange
-    });
-
-    game.settings.register(MODULE_ID, "ElevationColor1", {
-        name: "Elevation 1 Color",
-        scope: "world",
-        config: true,
-        type: String,
-        default: "#ffff00",
-        ...reloadOnChange
-    });
-
-    game.settings.register(MODULE_ID, "ElevationColor2", {
-        name: "Elevation 2 Color",
-        scope: "world",
-        config: true,
-        type: String,
-        default: "#ff8800",
-        ...reloadOnChange
-    });
-
-    game.settings.register(MODULE_ID, "ElevationColor3", {
-        name: "Elevation 3 Color",
-        scope: "world",
-        config: true,
-        type: String,
-        default: "#ff0000",
-        ...reloadOnChange
-    });
-
-    game.settings.register(MODULE_ID, "ElevationColor4", {
-        name: "Elevation 4 Color",
-        scope: "world",
-        config: true,
-        type: String,
-        default: "#ff00ff",
-        ...reloadOnChange
-    });
-
-    game.settings.register(MODULE_ID, "ElevationColor5", {
-        name: "Elevation 5 Color",
-        scope: "world",
-        config: true,
-        type: String,
-        default: "#00ffff",
-        ...reloadOnChange
-    });
-
-    game.settings.register(MODULE_ID, "ElevationColor6", {
-        name: "Elevation 6 Color",
-        scope: "world",
-        config: true,
-        type: String,
-        default: "#00ff00",
-        ...reloadOnChange
-    });
+    }
 
     game.settings.register(MODULE_ID, 'ColorTileOpacity', {
         name: "Color Tile Opacity", hint: "choose the opacity of the color overlay when enabled",
@@ -133,8 +82,8 @@ export const registerSettings = () => {
 
     Hooks.on("renderSettingsConfig", (app, html) => {
           const root = html instanceof HTMLElement ? html : html[0]; // handle either case
-        for (const key of ["ElevationColor1", "ElevationColor2", "ElevationColor3", "ElevationColor4", "ElevationColor5", "ElevationColor6"]) {
-            const input = root.querySelector(`input[name="${MODULE_ID}.${key}"]`);
+        for (const key of elevations) {
+            const input = root.querySelector(`input[name="${MODULE_ID}.ElevationColor${key}"]`);
             if (input) input.setAttribute("type", "color");
         }
     });
